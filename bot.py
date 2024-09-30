@@ -16,12 +16,15 @@ logging.basicConfig(level=logging.INFO)
 
 # Ваш токен и настройка админов
 TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
-MAIN_ADMIN_ID = 1980610942  # Измените на ваш ID
+MAIN_ADMIN_IDS = [1980610942, 394468757]  # Измените на ваш ID
 
 # Пути к файлам
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ADMINS_FILE = os.path.join(CURRENT_DIR, 'admins.json')
 USER_IDS_FILE = os.path.join(CURRENT_DIR, 'user_ids.json')
+
+def is_main_admin(user_id):
+    return user_id in MAIN_ADMIN_IDS  # Проверяем, находится ли user_id в списке главных администраторов
 
 ## Загружаем список пользователей
 def load_user_ids():
@@ -69,15 +72,14 @@ def load_admins():
             with open(ADMINS_FILE, 'r') as file:
                 return json.load(file)
         except (json.JSONDecodeError, FileNotFoundError):
-            return [MAIN_ADMIN_ID]
-    return [MAIN_ADMIN_ID]
+            return [MAIN_ADMIN_IDS]
+    return [MAIN_ADMIN_IDS]
 
 def save_admins(admins):
     with open(ADMINS_FILE, 'w') as file:
         json.dump(admins, file)
 
 admins = load_admins()
-current_admin = MAIN_ADMIN_ID
 # Роли сотрудников
 # Доступные имена для выбора
 admin_names = ["Мария", "Алексей", "Иван", "Анна"]
@@ -155,18 +157,28 @@ async def handle_main_menu(update: Update, context):
             await query.message.reply_text("У вас нет прав для доступа в админ меню.")
 
 # Показ меню администратора с кнопкой "Назад"
-async def show_admin_menu(update: Update):
-    keyboard = [
-        [InlineKeyboardButton("👨‍👩‍👧‍👦Список админов", callback_data="list_admins")],
-        [InlineKeyboardButton("🙋‍♀️Добавить админа", callback_data="add_admin")],
-        [InlineKeyboardButton("🙅‍♀️Удалить админа", callback_data="remove_admin")],
-        [InlineKeyboardButton("💂‍♀️Установить сменщика", callback_data="set_shift_admin")],
+async def show_admin_menu(query: Update):
+    keyboard = []
+    
+    # Проверяем, является ли пользователь главным администратором
+    if is_main_admin(query.from_user.id):
+        # Показываем полное меню для главного администратора
+        keyboard.extend([
+            [InlineKeyboardButton("👨‍👩‍👧‍👦Список админов", callback_data="list_admins")],
+            [InlineKeyboardButton("🙋‍♀️Добавить админа", callback_data="add_admin")],
+            [InlineKeyboardButton("🙅‍♀️Удалить админа", callback_data="remove_admin")],
+        ])
+    
+    # Общие функции, доступные для всех администраторов
+    keyboard.extend([
         [InlineKeyboardButton("🫡Встать на смену", callback_data="take_shift")],
         [InlineKeyboardButton("📨 Рассылка", callback_data="broadcast_message")],
         [InlineKeyboardButton("🧾Редактировать скидку", callback_data="edit_discount")],
+        [InlineKeyboardButton("Список броней", callback_data="booking_list")],  # <-- Запятая добавлена здесь
         [InlineKeyboardButton("⬅ Назад", callback_data="go_back")]
-    ]
-    await update.message.reply_text(
+    ])
+    
+    await query.message.reply_text(
         "Вы в админ меню. Выберите действие:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
@@ -232,19 +244,6 @@ async def handle_admin_removal(update: Update, context):
     else:
         await query.message.reply_text("Админ не найден.")
 
-# Обработка назначения сменщика
-async def handle_shift_admin_selection(update: Update, context):
-    query = update.callback_query
-    await query.answer()
-    shift_admin_id = int(query.data.split('_')[2])  # Получаем ID админа для назначения сменщиком
-
-    if shift_admin_id in admins:
-        global current_admin
-        current_admin = shift_admin_id  # Устанавливаем нового сменщика
-        await query.message.reply_text(f"Сменщик установлен: {shift_admin_id}. Все сообщения теперь будут приходить ему.")
-    else:
-        await query.message.reply_text("Админ не найден.")
-
 async def handle_shift_selection(update: Update, context):
     query = update.callback_query
     await query.answer()
@@ -277,6 +276,32 @@ async def handle_edit_discount(update: Update, context):
         context.user_data['awaiting_phone_for_discount'] = True
     else:
         await update.message.reply_text("У вас нет прав для редактирования скидок.")
+
+
+# Функция для показа списка бронирований за последние 2 дня
+async def show_booking_list(update, context):
+    query = update.callback_query  # Получаем CallbackQuery вместо message
+    user_id = query.from_user.id
+
+    # Проверка, что пользователь является админом
+    if not is_admin(user_id):
+        await query.message.reply_text("У вас нет прав для просмотра бронирований.")
+        return
+
+    today = datetime.now().date()
+    two_days_ago = today - timedelta(days=2)
+
+    # Получаем бронирования за последние 2 дня
+    booking_message = "Список бронирований за последние 2 дня:\n"
+    for booking_id, booking in reservations.items():
+        booking_date = booking['date'].date()
+        if two_days_ago <= booking_date <= today:
+            booking_message += f"- {booking['user']}: {booking['details']} (Дата: {booking_date})\n"
+
+    if booking_message == "Список бронирований за последние 2 дня:\n":
+        booking_message = "Нет бронирований за последние 2 дня."
+
+    await query.message.reply_text(booking_message)
 
 # Редактирование скидки
 async def show_edit_discount_menu(update: Update, context):
@@ -645,12 +670,13 @@ async def send_reservation_to_admin(update: Update, context, reservation):
          InlineKeyboardButton("Уточнить бронь", callback_data=f"clarify_{user_id}")]
     ]
 
-    # Отправляем сообщение админу
-    await context.bot.send_message(
-        chat_id=current_admin, 
-        text=message, 
-        reply_markup=InlineKeyboardMarkup(keyboard), 
-        parse_mode=ParseMode.HTML
+    # Отправляем сообщение всем администраторам
+    for admin_id in admins:
+        await context.bot.send_message(
+            chat_id=admin_id, 
+            text=message, 
+            reply_markup=InlineKeyboardMarkup(keyboard), 
+            parse_mode=ParseMode.HTML
     )
 
     # Изменяем состояние пользователя на "Ожидание"
@@ -672,13 +698,17 @@ async def send_clarification_to_admin(update: Update, context, reservation):
          InlineKeyboardButton("Уточнить бронь", callback_data=f"clarify_{user_id}")]
     ]
 
-    # Отправляем новое сообщение админу с уточнением
-    await context.bot.send_message(
-        chat_id=current_admin, 
-        text=clarification_message, 
-        reply_markup=InlineKeyboardMarkup(keyboard), 
-        parse_mode=ParseMode.HTML
-    )
+    # Отправляем новое сообщение всем администраторам с уточнением
+    for admin_id in admins:
+        try:
+            await context.bot.send_message(
+                chat_id=admin_id,
+                text=clarification_message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode=ParseMode.HTML
+            )
+        except Exception as e:
+            print(f"Не удалось отправить сообщение админу {admin_id}: {e}")
 
     # Изменяем состояние пользователя на "Ожидание"
     user_states[user_id] = 'IDLE'
@@ -724,26 +754,10 @@ def reset_user_state(user_id):
         print(f"Состояние пользователя {user_id} успешно сброшено.")  # Для отладки
     else:
         print(f"Пользователь {user_id} не имеет активной брони.")  # Для отладки
-    
-# Установка активного администратора
-async def set_active_admin(update: Update, context):
-    if is_admin(update.message.from_user.id):
-        if context.args:
-            new_active_admin_id = int(context.args[0])
-            if new_active_admin_id in admins:
-                global current_admin
-                current_admin = new_active_admin_id
-                await update.message.reply_text(f"Активный администратор изменён на {new_active_admin_id}.")
-            else:
-                await update.message.reply_text("Этот пользователь не является администратором.")
-        else:
-            await update.message.reply_text("Пожалуйста, укажите ID администратора для установки.")
-    else:
-        await update.message.reply_text("У вас нет прав для установки активного администратора.")
 
 # Удаление администратора
 async def remove_admin(update: Update, context):
-    if is_admin(update.message.from_user.id):
+    if is_main_admin(update.message.from_user.id):
         if context.args:
             admin_id_to_remove = int(context.args[0])
             if admin_id_to_remove in admins:
@@ -759,7 +773,7 @@ async def remove_admin(update: Update, context):
 
 # Список администраторов
 async def admin_list(update: Update, context):
-    if is_admin(update.message.from_user.id):
+    if is_main_admin(update.message.from_user.id):
         if admins:
             await update.message.reply_text("Список администраторов:\n" + "\n".join(str(admin) for admin in admins))
         else:
@@ -767,9 +781,9 @@ async def admin_list(update: Update, context):
     else:
         await update.message.reply_text("У вас нет прав для просмотра списка администраторов.")
 
-# Команды для администраторов
+# Команды, доступные только главному администратору
 async def add_admin(update: Update, context):
-    if is_admin(update.message.from_user.id):
+    if is_main_admin(update.message.from_user.id):
         if context.args:
             new_admin_id = int(context.args[0])
             if new_admin_id not in admins:
@@ -836,16 +850,16 @@ def load_admins():
             return json.load(file)
     return []
 
-# Добавление всех хендлеров команд и кнопок в боте
+# Добавляем проверки в хендлеры команд
 def add_handlers(app):
     # Хендлеры команд
     app.add_handler(CommandHandler("start", start))  # Команда старт
     app.add_handler(CommandHandler("add_admin", add_admin))  # Добавление админа
-    app.add_handler(CommandHandler("set_active_admin", set_active_admin))  # Установка активного админа
     app.add_handler(CommandHandler("remove_admin", remove_admin))  # Удаление админа
     app.add_handler(CommandHandler("admin_list", admin_list))  # Список админов
     app.add_handler(CommandHandler("broadcast", send_broadcast))  # Рассылка
     app.add_handler(CommandHandler("edit_discount", handle_edit_discount))  # Хендлер редактирования скидки
+    app.add_handler(CommandHandler("booking_list", show_booking_list))  # Добавляем хендлер команды
 
     # Хендлеры для работы с callback (нажатия на кнопки)
     app.add_handler(CallbackQueryHandler(handle_main_menu, pattern=r"^(book_table|admin_menu)$"))  # Главное меню
@@ -857,10 +871,10 @@ def add_handlers(app):
     app.add_handler(CallbackQueryHandler(clarify_reservation, pattern=r"^clarify_"))  # Уточнение брони
     app.add_handler(CallbackQueryHandler(handle_shift_selection, pattern=r"^(take_shift|set_admin|set_hookah_master)$"))  # Выбор роли на смене
     app.add_handler(CallbackQueryHandler(handle_staff_choice, pattern=r"^choose_admin_|choose_hookah_master_"))  # Выбор сотрудника
-    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^(list_admins|add_admin|remove_admin|set_shift_admin|take_shift|broadcast_message|edit_discount|go_back)$"))  # Админ меню
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^(list_admins|add_admin|remove_admin|broadcast_message|edit_discount|go_back)$"))  # Админ меню
     app.add_handler(CallbackQueryHandler(handle_admin_removal, pattern=r"^delete_admin_\d+$"))  # Удаление админа
-    app.add_handler(CallbackQueryHandler(handle_shift_admin_selection, pattern=r"^set_shift_\d+$"))  # Назначение сменщика
     app.add_handler(CallbackQueryHandler(handle_phone_selection, pattern=r"^select_phone_"))  # Выбор телефона для редактирования скидки
+    app.add_handler(CallbackQueryHandler(show_booking_list, pattern=r"^booking_list$"))
     
     # Хендлеры для обработки сообщений
     app.add_handler(MessageHandler(filters.PHOTO, handle_message))  # Обработка фото
