@@ -23,6 +23,13 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ADMINS_FILE = os.path.join(CURRENT_DIR, 'admins.json')
 USER_IDS_FILE = os.path.join(CURRENT_DIR, 'user_ids.json')
 
+# Хранение 
+user_states = {}    # Словарь для хранения состояний пользователей
+reservations = {} # Словарь для хранения бронирований
+confirmed_reservations = {}  # Здесь будем хранить все подтверждённые брони
+admin_clarifications = {}  # Словарь для уточнения администратором
+clarifying_reservation = {} # для отслеживания запросов на уточнение брони
+
 def is_main_admin(user_id):
     return user_id in MAIN_ADMIN_IDS  # Проверяем, находится ли user_id в списке главных администраторов
 
@@ -93,12 +100,6 @@ active_staff = {
 
 # Инициализация приложения
 app = Application.builder().token(TOKEN).build()
-
-# Хранение 
-user_states = {}    # Словарь для хранения состояний пользователей
-reservations = {} # Словарь для хранения бронирований
-admin_clarifications = {}  # Словарь для уточнения администратором
-clarifying_reservation = {} # для отслеживания запросов на уточнение брони
 
 def is_admin(user_id):
     return user_id in admins
@@ -174,7 +175,7 @@ async def show_admin_menu(query: Update):
         [InlineKeyboardButton("🫡Встать на смену", callback_data="take_shift")],
         [InlineKeyboardButton("📨 Рассылка", callback_data="broadcast_message")],
         [InlineKeyboardButton("🧾Редактировать скидку", callback_data="edit_discount")],
-        [InlineKeyboardButton("Список броней", callback_data="booking_list")],  # <-- Запятая добавлена здесь
+        [InlineKeyboardButton("📋Список броней", callback_data="booking_list")],  # <-- Запятая добавлена здесь
         [InlineKeyboardButton("⬅ Назад", callback_data="go_back")]
     ])
     
@@ -278,12 +279,13 @@ async def handle_edit_discount(update: Update, context):
         await update.message.reply_text("У вас нет прав для редактирования скидок.")
 
 
-# Функция для показа списка бронирований за последние 2 дня
+from datetime import datetime, timedelta
+
 async def show_booking_list(update, context):
-    query = update.callback_query  # Получаем CallbackQuery вместо message
+    query = update.callback_query
     user_id = query.from_user.id
 
-    # Проверка, что пользователь является админом
+    # Проверяем права доступа
     if not is_admin(user_id):
         await query.message.reply_text("У вас нет прав для просмотра бронирований.")
         return
@@ -291,15 +293,33 @@ async def show_booking_list(update, context):
     today = datetime.now().date()
     two_days_ago = today - timedelta(days=2)
 
-    # Получаем бронирования за последние 2 дня
-    booking_message = "Список бронирований за последние 2 дня:\n"
-    for booking_id, booking in reservations.items():
-        booking_date = booking['date'].date()
-        if two_days_ago <= booking_date <= today:
-            booking_message += f"- {booking['user']}: {booking['details']} (Дата: {booking_date})\n"
+    # Собираем бронирования за последние 2 дня
+    booking_message = "Список подтверждённых бронирований за последние 2 дня:\n"
+    for booking_id, booking in confirmed_reservations.items():
+        booking_date_str = booking.get('date')  # Дата в формате 'дд-мм-гггг'
 
-    if booking_message == "Список бронирований за последние 2 дня:\n":
-        booking_message = "Нет бронирований за последние 2 дня."
+        try:
+            # Преобразуем строку 'дд-мм-гггг' в объект datetime.date для сравнения
+            booking_date = datetime.strptime(booking_date_str, '%d-%m-%Y').date()
+
+            # Проверяем, что дата находится в диапазоне последних 2 дней
+            if two_days_ago <= booking_date <= today:
+                # Формируем сообщение с данными бронирования
+                booking_message += (
+                    f"- Пользователь: {booking['user']}\n"
+                    f"Телефон: {booking['phone']}\n"
+                    f"Скидка: {booking['discount']}%\n"
+                    f"Дата: {booking['date']}\n"
+                    f"Гости: {booking['guests']}\n"
+                    f"Время: {booking['time']}\n"
+                    f"Комментарий: {booking['comment']}\n\n"
+                )
+        except ValueError:
+            # Если формат даты неправильный, пропускаем это бронирование
+            continue
+
+    if booking_message == "Список подтверждённых бронирований за последние 2 дня:\n":
+        booking_message = "Нет подтверждённых бронирований за последние 2 дня."
 
     await query.message.reply_text(booking_message)
 
@@ -729,16 +749,33 @@ async def confirm_reservation(update: Update, context):
 
     # Проверяем, подтверждена ли уже бронь
     if reservation.get('confirmed', False):
-        # Если бронь уже подтверждена, просто удаляем сообщение
         await query.message.delete()
     else:
-        # Если бронь не была подтверждена, подтверждаем её
-        reservation['confirmed'] = True  # Помечаем бронь как подтвержденную
-        
+        # Подтверждаем бронь
+        reservation['confirmed'] = True
+
+        # Получаем информацию о пользователе
+        user_data = user_ids.get(str(user_id), {})
+        user_name = user_data.get('name', 'Не указано')
+        user_phone = user_data.get('phone', 'Не указано')
+        user_discount = user_data.get('discount', 0)
+
+        # Сохраняем данные бронирования в подтверждённые брони
+        confirmed_reservations[user_id] = {
+            'user': user_name,
+            'phone': user_phone,
+            'discount': user_discount,
+            'date': reservation['date'],  # Дата бронирования
+            'guests': reservation['guests'],  # Количество гостей
+            'time': reservation['time'],  # Время бронирования
+            'comment': reservation.get('comment', 'Нет пожеланий'),  # Комментарий
+        }
+        print(f"Подтверждённая бронь: {confirmed_reservations[user_id]}")
+
         # Отправляем сообщение пользователю о подтверждении брони
         await context.bot.send_message(chat_id=user_id, text="Ваша бронь подтверждена!\nЖдём вас с нетерпением к нам в гости!")
-        
-        # Сброс состояния пользователя (можно адаптировать в зависимости от логики)
+
+        # Сбрасываем состояние пользователя
         reset_user_state(user_id)
 
         # Удаляем сообщение у администратора
