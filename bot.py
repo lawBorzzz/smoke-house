@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Ваш токен и настройка админов
 TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
-MAIN_ADMIN_IDS = [1980610942,]  # Измените на ваш ID
+MAIN_ADMIN_IDS = [1980610942, 394468757]  # Измените на ваш ID
 
 # Пути к файлам
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -506,8 +506,29 @@ async def handle_time_selection(update: Update, context):
     await query.message.delete()
     
     # Спрашиваем пожелания
-    await query.message.reply_text("Есть ли какие-то пожелания? Напишите ваш комментарий.")
+    keyboard = [
+        [InlineKeyboardButton("Пропустить", callback_data=f"skip_comment")]
+    ]
+    await query.message.reply_text("Есть ли какие-то пожелания? Напишите ваш комментарий.", reply_markup=InlineKeyboardMarkup(keyboard))
+
     # Ожидаем комментарий или пожелание от пользователя
+
+async def skip_comment(update: Update, context):
+    query = update.callback_query
+    user_id = query.from_user.id  # Меняем на query.from_user.id
+    
+    if user_id not in reservations:
+        reservations[user_id] = {}
+
+    # Добавляем комментарий "Нет пожеланий"
+    reservations[user_id]['comment'] = "Нет пожеланий"
+    
+    await query.message.delete()
+    await query.message.reply_text("Пожалуйста, подождите подтверждения от администратора.")
+    
+    # Отправляем бронирование админу
+    await send_reservation_to_admin(update, context, reservations[user_id])
+    user_states[user_id] = 'IDLE'
 
 def is_admin(user_id):
     # Проверяем, находится ли user_id в списке администраторов
@@ -523,8 +544,8 @@ async def handle_message(update: Update, context):
         message_text = update.message.caption  # Используем подпись фото как текст сообщения, если он есть
         print(f"Фото получено, file_id: {file_id}")
 
-        # Отправляем фото всем пользователям
-        await broadcast_message(context, message_text, photo=file_id)
+        # Отправляем фото всем пользователям, кроме отправителя
+        await broadcast_message(context, message_text, photo=file_id, exclude_user_id=user_id)
         return
 
     # Проверяем, если сообщение содержит видео
@@ -533,8 +554,8 @@ async def handle_message(update: Update, context):
         message_text = update.message.caption  # Используем подпись видео как текст сообщения, если он есть
         print(f"Видео получено, file_id: {file_id}")
 
-        # Отправляем видео всем пользователям
-        await broadcast_message(context, message_text, video=file_id)
+        # Отправляем видео всем пользователям, кроме отправителя
+        await broadcast_message(context, message_text, video=file_id, exclude_user_id=user_id)
         return
 
     # Проверяем, если администратор вводит новый процент скидки
@@ -599,10 +620,18 @@ async def handle_message(update: Update, context):
     # Проверяем, если администратор отправляет сообщение для рассылки
     if context.user_data.get('state') == 'broadcast_message':
         message_text = update.message.text
-        # Отправляем сообщение всем пользователям
-        await broadcast_message(context, message_text)
+        
+        # Получаем ID администратора, который отправляет сообщение
+        admin_id = update.message.from_user.id
+        
+        # Отправляем сообщение всем пользователям, кроме самого администратора
+        await broadcast_message(context, message_text, exclude_user_id=admin_id)
+        
+        # Подтверждение отправки рассылки
         await update.message.reply_text("Сообщение отправлено всем пользователям.")
-        context.user_data['state'] = None  # Сбрасываем состояние после рассылки
+        
+        # Сбрасываем состояние после рассылки
+        context.user_data['state'] = None
         return
 
     # Проверяем, если администратор вводит новый ID для добавления
@@ -630,13 +659,29 @@ async def handle_message(update: Update, context):
         user_states[user_id] = 'IDLE'
 
     elif is_admin(user_id):
+        # Если администратор сделал бронь, он рассматривается как обычный пользователь
         if user_id in admin_clarifications:
             target_user_id = admin_clarifications[user_id]
             clarification_message = update.message.text
             await context.bot.send_message(chat_id=target_user_id, text=f"Администратор уточняет: {clarification_message}")
+            del admin_clarifications[user_id]  # Удаляем процесс уточнения после завершения
+            user_states[user_id] = 'IDLE'  # Сбрасываем состояние администратора
+
+        # Проверяем, если админ, сделавший бронь, участвует в уточнении
+        elif any(user_id == clarifier_id for clarifier_id in admin_clarifications.values()):
+            # Находим ID администратора, кому уточняют (автор брони)
+            target_user_id = next(
+                key for key, clarifier_id in admin_clarifications.items() if clarifier_id == user_id
+            )
+            clarification_message = update.message.text
+            await context.bot.send_message(chat_id=target_user_id, text=f"Пользователь уточняет: {clarification_message}")  # Меняем текст на "Пользователь"
+            del admin_clarifications[target_user_id]  # Удаляем процесс уточнения после завершения
+            user_states[user_id] = 'IDLE'  # Сбрасываем состояние администратора
+
         else:
             await update.message.reply_text("Вы не начали процесс уточнения бронирования.")
-    
+        return
+
     # Если это обычный пользователь
     else:
         if user_states.get(user_id) == 'IN_BOOKING':
@@ -644,14 +689,15 @@ async def handle_message(update: Update, context):
             reservations[user_id]['comment'] = update.message.text
             await update.message.reply_text("Пожалуйста, подождите подтверждения от администратора.")
             await send_reservation_to_admin(update, context, reservations[user_id])
-            user_states[user_id] = 'IDLE'
+            user_states[user_id] = 'IDLE'  # Сбрасываем состояние пользователя после брони
         elif user_states.get(user_id) == 'WAITING_FOR_CLARIFICATION':
             reservations[user_id]['clarification'] = update.message.text
             await update.message.reply_text(f"Ваше сообщение передано администратору, ожидайте.")
             await send_clarification_to_admin(update, context, reservations[user_id])
-            user_states[user_id] = 'IDLE'
+            user_states[user_id] = 'IDLE'  # Сбрасываем состояние пользователя после уточнения
         else:
-            await update.message.reply_text("Ожидайте ответа администратора.")
+            await update.message.reply_text("Вы не начинали бронирование.")
+        return
 
 # Обработка уточнения бронирования от администратора
 async def clarify_reservation(update: Update, context):
@@ -668,7 +714,15 @@ async def clarify_reservation(update: Update, context):
 
 # Отправляем запрос админу
 async def send_reservation_to_admin(update: Update, context, reservation):
-    user_id = update.message.from_user.id
+    if update.message:
+        user_id = update.message.from_user.id
+        mention_html = update.message.from_user.mention_html()
+    elif update.callback_query:
+        user_id = update.callback_query.from_user.id
+        mention_html = update.callback_query.from_user.mention_html()
+    else:
+        return  # Если ни то, ни другое, просто выходим
+
     add_user_id(user_id)
 
     # Получаем данные пользователя (имя и телефон)
@@ -677,9 +731,9 @@ async def send_reservation_to_admin(update: Update, context, reservation):
     user_phone = user_data.get('phone', 'Не указано')
     user_discount = user_data.get('discount', 0)
 
-    # Основное сообщение с добавлением имени и телефона
+    # Основное сообщение с бронированием
     message = (
-        f"Пользователь: {update.message.from_user.mention_html()}\n"
+        f"Пользователь: {mention_html}\n"
         f"Данные: {user_name} {user_phone}\n"
         f"Скидка: {user_discount}%\n"
         f"Дата: {reservation['date']}\n"
@@ -688,23 +742,28 @@ async def send_reservation_to_admin(update: Update, context, reservation):
         f"Комментарий: {reservation.get('comment', 'Нет пожеланий')}"
     )
 
-    # Кнопки для администратора
+    # Определяем клавиатуру
     keyboard = [
         [InlineKeyboardButton("Подтвердить бронь", callback_data=f"confirm_{user_id}"),
          InlineKeyboardButton("Уточнить бронь", callback_data=f"clarify_{user_id}")]
     ]
 
-    # Отправляем сообщение всем администраторам
+    # Отправляем сообщение другим администраторам (кроме того, кто сделал бронь)
     for admin_id in admins:
-        await context.bot.send_message(
-            chat_id=admin_id, 
-            text=message, 
-            reply_markup=InlineKeyboardMarkup(keyboard), 
-            parse_mode=ParseMode.HTML
-    )
+        if admin_id != user_id:  # Исключаем администратора, который делает бронирование
+            await context.bot.send_message(
+                chat_id=admin_id,
+                text=message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode=ParseMode.HTML
+            )
 
     # Изменяем состояние пользователя на "Ожидание"
     user_states[user_id] = 'IDLE'
+
+    # Если администратор сделал бронь, ставим его в статус обычного пользователя для этой брони
+    if is_admin(user_id):
+        user_states[user_id] = 'USER_IN_BOOKING'  # Устанавливаем статус как обычного пользователя
 
 # Отправляем уточнение админу
 async def send_clarification_to_admin(update: Update, context, reservation):
@@ -839,22 +898,23 @@ async def add_admin(update: Update, context):
         await update.message.reply_text("У вас нет прав для добавления администратора.")
 
 # Функция для отправки фото по file_id
-async def broadcast_message(context, message_text=None, photo=None, video=None):
+async def broadcast_message(context, message_text, photo=None, video=None, exclude_user_id=None):
+    # Проходим по всем пользователям
     for user_id in user_ids:
-        try:
-            if photo:
-                # Отправляем фото
-                await context.bot.send_photo(chat_id=user_id, photo=photo, caption=message_text)
-                print(f"Фото отправлено пользователю {user_id}, file_id: {photo}")
-            elif video:
-                # Отправляем видео
-                await context.bot.send_video(chat_id=user_id, video=video, caption=message_text)
-                print(f"Видео отправлено пользователю {user_id}, file_id: {video}")
-            elif message_text:
-                # Отправляем только текст
-                await context.bot.send_message(chat_id=user_id, text=message_text)
-        except Exception as e:
-            print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
+        # Если пользователь не является отправителем, продолжаем рассылку
+        if str(user_id) != str(exclude_user_id):
+            try:
+                # Если передано фото, отправляем фото
+                if photo:
+                    await context.bot.send_photo(chat_id=user_id, photo=photo, caption=message_text)
+                # Если передано видео, отправляем видео
+                elif video:
+                    await context.bot.send_video(chat_id=user_id, video=video, caption=message_text)
+                # В противном случае отправляем текст
+                else:
+                    await context.bot.send_message(chat_id=user_id, text=message_text)
+            except Exception as e:
+                print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
 
 # Получение файла и отправка по его file_id
 async def send_broadcast(update: Update, context):
@@ -908,6 +968,7 @@ def add_handlers(app):
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^date_"))  # Выбор даты
     app.add_handler(CallbackQueryHandler(handle_guest_selection, pattern=r"^guests_"))  # Выбор гостей
     app.add_handler(CallbackQueryHandler(handle_time_selection, pattern=r"^time_"))  # Выбор времени
+    app.add_handler(CallbackQueryHandler(skip_comment, pattern=r"^skip_comment$")) # Пропуск коментария брони
     app.add_handler(CallbackQueryHandler(confirm_reservation, pattern=r"^confirm_"))  # Подтверждение брони
     app.add_handler(CallbackQueryHandler(clarify_reservation, pattern=r"^clarify_"))  # Уточнение брони
     app.add_handler(CallbackQueryHandler(handle_shift_selection, pattern=r"^(take_shift|set_admin|set_hookah_master)$"))  # Выбор роли на смене
