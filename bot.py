@@ -162,6 +162,7 @@ async def show_admin_menu(query: Update):
     if is_main_admin(query.from_user.id):
         # Показываем полное меню для главного администратора
         keyboard.extend([
+            [InlineKeyboardButton("Версия 2.0", callback_data="asd")]
             [InlineKeyboardButton("👨‍👩‍👧‍👦Список админов", callback_data="list_admins")],
             [InlineKeyboardButton("🙋‍♀️Добавить админа", callback_data="add_admin")],
             [InlineKeyboardButton("🙅‍♀️Удалить админа", callback_data="remove_admin")],
