@@ -7,16 +7,13 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 from telegram.constants import ParseMode
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-
-
-
 import logging
 
 logging.basicConfig(level=logging.INFO)
 
 # Ваш токен и настройка админов
 TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
-MAIN_ADMIN_IDS = [1980610942, 394468757]  # Измените на ваш ID
+MAIN_ADMIN_IDS = [1980610942,]  # Измените на ваш ID
 
 # Пути к файлам
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -303,7 +300,7 @@ async def show_booking_list(update, context):
             booking_date = datetime.strptime(booking_date_str, '%d-%m-%Y').date()
 
             # Проверяем, что дата находится в диапазоне последних 2 дней
-            if two_days_ago <= booking_date <= today:
+            if booking_date >= today:
                 # Формируем сообщение с данными бронирования
                 booking_message += (
                     f"- Пользователь: {booking['user']}\n"
@@ -625,7 +622,14 @@ async def handle_message(update: Update, context):
         return
 
     # Если это администратор
-    if is_admin(user_id):
+    if user_states.get(user_id) == 'IN_BOOKING':
+        reservation = reservations.get(user_id, {})
+        reservations[user_id]['comment'] = update.message.text
+        await update.message.reply_text("Пожалуйста, подождите подтверждения от администратора.")
+        await send_reservation_to_admin(update, context, reservations[user_id])
+        user_states[user_id] = 'IDLE'
+
+    elif is_admin(user_id):
         if user_id in admin_clarifications:
             target_user_id = admin_clarifications[user_id]
             clarification_message = update.message.text
