@@ -330,7 +330,7 @@ async def show_edit_discount_menu(update: Update, context):
         keyboard = [
             [
                 InlineKeyboardButton(
-                    f"{user_data.get('name', 'Неизвестно')} {user_data['phone'][-4:]} - {user_data.get('discount', 0)} руб.",
+                    f"{user_data.get('name', 'Неизвестно')} {user_data['phone']} - {user_data.get('discount', 0)} руб.",
                     callback_data=f"select_phone_{user_data['phone']}"
                 )
             ]
