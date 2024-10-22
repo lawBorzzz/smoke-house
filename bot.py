@@ -117,7 +117,7 @@ async def start(update: Update, context):
 
     # Проверяем наличие номера телефона и имени
     if 'phone' not in user_data or user_data['phone'] == "":
-        await update.message.reply_text("Здравствуйте! Пожалуйста, введите ваш номер телефона.")
+        await update.message.reply_text("Здравствуйте! Рады приветствовать вас в Smoke House! \nЗаполняя анкету вы даете согласие на обработку персональных данных. \nПожалуйста, введите ваш номер телефона.")
         context.user_data['awaiting_phone'] = True
         return
     if 'name' not in user_data or user_data['name'] == "":
@@ -869,7 +869,12 @@ async def remove_admin(update: Update, context):
             if admin_id_to_remove in admins:
                 admins.remove(admin_id_to_remove)
                 save_admins(admins)
-                await update.message.reply_text(f"Администратор {admin_id_to_remove} удалён.")
+
+                # Попытка найти имя администратора в базе user_ids
+                user_data = user_ids.get(admin_id_to_remove)
+                admin_name = user_data['name'] if user_data and 'name' in user_data else str(admin_id_to_remove)
+
+                await update.message.reply_text(f"Администратор {admin_name} удалён.")
             else:
                 await update.message.reply_text("Этот пользователь не является администратором.")
         else:
@@ -881,7 +886,15 @@ async def remove_admin(update: Update, context):
 async def admin_list(update: Update, context):
     if is_main_admin(update.message.from_user.id):
         if admins:
-            await update.message.reply_text("Список администраторов:\n" + "\n".join(str(admin) for admin in admins))
+            admin_list = []
+            for admin_id in admins:
+                # Попытка найти имя администратора в базе user_ids
+                user_data = user_ids.get(admin_id)
+                admin_name = user_data['name'] if user_data and 'name' in user_data else str(admin_id)
+                
+                admin_list.append(admin_name)
+            
+            await update.message.reply_text("Список администраторов:\n" + "\n".join(admin_list))
         else:
             await update.message.reply_text("Список администраторов пуст.")
     else:
