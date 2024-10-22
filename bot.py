@@ -86,13 +86,13 @@ def save_admins(admins):
 admins = load_admins()
 # Роли сотрудников
 # Доступные имена для выбора
-admin_names = ["Мария", "Алексей", "Иван", "Анна"]
-hookah_master_names = ["Никита", "Олег", "Сергей", "Дмитрий"]
+admin_names = ["Мария", "Аня", "Паша"]
+hookah_master_names = ["Родион", "Паша", "Андрей"]
 
 # Активные сотрудники
 active_staff = {
     "admin": "Мария",  # Изначально выбранный администратор
-    "hookah_master": "Никита"  # Изначально выбранный кальянщик
+    "hookah_master": "Родион"  # Изначально выбранный кальянщик
 }
 
 # Инициализация приложения
@@ -130,7 +130,7 @@ async def start(update: Update, context):
 
     # Добавляем информацию о скидке, только если она больше 0
     if user_data.get('discount', 0) > 0:
-        greeting += f"\nВаша текущая скидка на кальян: {user_data['discount']} руб."
+        greeting += f"\nВаша текущая скидка на классический кальян: {user_data['discount']} руб."
 
     greeting += f"\nСегодня на смене Администратор {active_staff['admin']} и Кальянщик {active_staff['hookah_master']}."
 
@@ -177,7 +177,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 2.1",
+        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -573,7 +573,7 @@ async def handle_message(update: Update, context):
                     await update.message.reply_text(f"Скидка для пользователя {phone} успешно изменена на {discount} руб.")
 
                     # Отправляем сообщение самому пользователю о новой скидке
-                    await context.bot.send_message(chat_id=user_id, text=f"Ваша новая скидка: {discount} руб.!")
+                    await context.bot.send_message(chat_id=user_id, text=f"Ваша новая скидка на классический кальян: {discount} руб.!")
 
                     break
 
