@@ -86,7 +86,7 @@ def save_admins(admins):
 admins = load_admins()
 # Роли сотрудников
 # Доступные имена для выбора
-admin_names = ["Мария", "Аня", "Паша"]
+admin_names = ["Маша", "Аня", "Паша"]
 hookah_master_names = ["Родион", "Паша", "Андрей"]
 
 # Активные сотрудники
