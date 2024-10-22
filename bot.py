@@ -130,7 +130,7 @@ async def start(update: Update, context):
 
     # Добавляем информацию о скидке, только если она больше 0
     if user_data.get('discount', 0) > 0:
-        greeting += f"\nВаша текущая скидка на классический кальян: {user_data['discount']} руб."
+        greeting += f"\nВаша текущая скидка на классический кальян - {user_data['discount']} руб."
 
     greeting += f"\nСегодня на смене Администратор {active_staff['admin']} и Кальянщик {active_staff['hookah_master']}."
 
@@ -570,10 +570,10 @@ async def handle_message(update: Update, context):
                     user_data['discount'] = discount
                     save_user_ids(user_ids)
                     # Уведомляем администратора о смене скидки
-                    await update.message.reply_text(f"Скидка для пользователя {phone} успешно изменена на {discount} руб.")
+                    await update.message.reply_text(f"Скидка для пользователя {phone} успешно изменена на - {discount} руб.")
 
                     # Отправляем сообщение самому пользователю о новой скидке
-                    await context.bot.send_message(chat_id=user_id, text=f"Ваша новая скидка на классический кальян: {discount} руб.!")
+                    await context.bot.send_message(chat_id=user_id, text=f"Ваша новая скидка на классический кальян - {discount} руб.!")
 
                     break
 
