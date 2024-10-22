@@ -177,7 +177,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
+        f"Вы в админ меню. Выберите действие:\nВерсия 3.0",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -191,8 +191,22 @@ async def handle_admin_menu(update: Update, context):
 
     # Показ списка админов
     if query.data == "list_admins":
-        admin_list = "\n".join([str(admin_id) for admin_id in admins])
-        await query.message.reply_text(f"Текущие админы:\n{admin_list}")
+        admin_list = []
+        for admin_id in admins:
+            user_data = user_ids.get(str(admin_id))  # Получаем данные по admin_id
+            print(f"Проверка admin_id: {admin_id}, user_data: {user_data}")  # Логируем admin_id и user_data
+            
+            if user_data and 'name' in user_data:
+                admin_name = user_data['name']
+                print(f"Найдено имя для {admin_id}: {admin_name}")  # Логируем найденное имя
+            else:
+                admin_name = str(admin_id)
+                print(f"Имя не найдено для {admin_id}, выводим ID")  # Логируем, если имя не найдено
+            
+            admin_list.append(admin_name)
+
+        print(f"Текущие админы: {admin_list}")  # Логируем список администраторов
+        await query.message.reply_text(f"Текущие админы:\n" + "\n".join(admin_list))
 
     # Добавление нового админа
     elif query.data == "add_admin":
@@ -201,10 +215,16 @@ async def handle_admin_menu(update: Update, context):
 
     # Удаление админа
     elif query.data == "remove_admin":
-        keyboard = [[InlineKeyboardButton(f"{admin_id}", callback_data=f"delete_admin_{admin_id}")]
-                    for admin_id in admins]
+        keyboard = [
+            [InlineKeyboardButton(f"{user_ids[str(admin_id)]['name']}", callback_data=f"delete_admin_{admin_id}")]
+            for admin_id in admins if str(admin_id) in user_ids  # Убедитесь, что user_ids содержит данные
+        ]
         keyboard.append([InlineKeyboardButton("⬅ Назад", callback_data="go_back")])
-        await query.message.reply_text("Выберите админа для удаления:", reply_markup=InlineKeyboardMarkup(keyboard))
+        
+        if keyboard:  # Проверяем, есть ли администраторы для удаления
+            await query.message.reply_text("Выберите админа для удаления:", reply_markup=InlineKeyboardMarkup(keyboard))
+        else:
+            await query.message.reply_text("Список администраторов пуст.")
 
     # Установка сменщика
     elif query.data == "set_shift_admin":
@@ -870,8 +890,10 @@ async def remove_admin(update: Update, context):
                 admins.remove(admin_id_to_remove)
                 save_admins(admins)
 
-                # Попытка найти имя администратора в базе user_ids
-                user_data = user_ids.get(admin_id_to_remove)
+                # Получаем данные пользователя по ID администратора
+                user_data = user_ids.get(str(admin_id_to_remove))
+
+                # Если нашли данные, используем имя, иначе показываем ID
                 admin_name = user_data['name'] if user_data and 'name' in user_data else str(admin_id_to_remove)
 
                 await update.message.reply_text(f"Администратор {admin_name} удалён.")
@@ -883,15 +905,22 @@ async def remove_admin(update: Update, context):
         await update.message.reply_text("У вас нет прав для удаления администратора.")
 
 # Список администраторов
+# Список администраторов
 async def admin_list(update: Update, context):
     if is_main_admin(update.message.from_user.id):
         if admins:
             admin_list = []
+            print("Проверка: user_ids содержимое:", user_ids)  # Выводим содержимое user_ids для проверки
+
             for admin_id in admins:
-                # Попытка найти имя администратора в базе user_ids
-                user_data = user_ids.get(admin_id)
-                admin_name = user_data['name'] if user_data and 'name' in user_data else str(admin_id)
-                
+                user_data = user_ids.get(str(admin_id))
+                if user_data and 'name' in user_data:
+                    admin_name = user_data['name']
+                    print(f"Найдено имя для {admin_id}: {admin_name}")  # Логируем найденное имя
+                else:
+                    admin_name = str(admin_id)  # Если имя не найдено, используем ID
+                    print(f"Имя не найдено для {admin_id}, выводим ID")  # Логируем, если имя не найдено
+
                 admin_list.append(admin_name)
             
             await update.message.reply_text("Список администраторов:\n" + "\n".join(admin_list))
