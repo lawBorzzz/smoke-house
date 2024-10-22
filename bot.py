@@ -130,7 +130,7 @@ async def start(update: Update, context):
 
     # Добавляем информацию о скидке, только если она больше 0
     if user_data.get('discount', 0) > 0:
-        greeting += f"\nВаша текущая скидка: {user_data['discount']} руб."
+        greeting += f"\nВаша текущая скидка на кальян: {user_data['discount']} руб."
 
     greeting += f"\nСегодня на смене Администратор {active_staff['admin']} и Кальянщик {active_staff['hookah_master']}."
 
