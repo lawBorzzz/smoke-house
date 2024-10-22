@@ -130,7 +130,7 @@ async def start(update: Update, context):
 
     # Добавляем информацию о скидке, только если она больше 0
     if user_data.get('discount', 0) > 0:
-        greeting += f"\nВаша текущая скидка: {user_data['discount']}%."
+        greeting += f"\nВаша текущая скидка: {user_data['discount']} руб."
 
     greeting += f"\nСегодня на смене Администратор {active_staff['admin']} и Кальянщик {active_staff['hookah_master']}."
 
@@ -177,7 +177,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 2.0",
+        f"Вы в админ меню. Выберите действие:\nВерсия 2.1",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -305,7 +305,7 @@ async def show_booking_list(update, context):
                 booking_message += (
                     f"- Пользователь: {booking['user']}\n"
                     f"Телефон: {booking['phone']}\n"
-                    f"Скидка: {booking['discount']}%\n"
+                    f"Скидка: {booking['discount']} руб.\n"
                     f"Дата: {booking['date']}\n"
                     f"Гости: {booking['guests']}\n"
                     f"Время: {booking['time']}\n"
@@ -328,7 +328,7 @@ async def show_edit_discount_menu(update: Update, context):
 
         # Формируем список номеров телефонов и скидок
         keyboard = [
-            [InlineKeyboardButton(f"{user_data['phone']} - {user_data.get('discount', 0)}%", callback_data=f"select_phone_{user_data['phone']}")]
+            [InlineKeyboardButton(f"{user_data['phone']} - {user_data.get('discount', 0)} руб.", callback_data=f"select_phone_{user_data['phone']}")]
             for user_data in user_ids.values() if 'phone' in user_data and user_data['phone']
         ]
         
@@ -370,7 +370,7 @@ async def handle_phone_selection(update: Update, context):
     selected_phone = query.data.split('_')[2]
     context.user_data['phone_for_discount'] = selected_phone
 
-    await query.message.reply_text(f"Вы выбрали номер телефона: {selected_phone}. Введите новый процент скидки для этого пользователя:")
+    await query.message.reply_text(f"Вы выбрали номер телефона: {selected_phone}. Введите скидку в рублях для этого пользователя:")
     context.user_data['awaiting_discount'] = True  # Устанавливаем состояние для ожидания ввода скидки
     await query.message.delete()  # Удаляем старое сообщение
 
@@ -570,10 +570,10 @@ async def handle_message(update: Update, context):
                     user_data['discount'] = discount
                     save_user_ids(user_ids)
                     # Уведомляем администратора о смене скидки
-                    await update.message.reply_text(f"Скидка для пользователя {phone} успешно изменена на {discount}%.")
+                    await update.message.reply_text(f"Скидка для пользователя {phone} успешно изменена на {discount} руб.")
 
                     # Отправляем сообщение самому пользователю о новой скидке
-                    await context.bot.send_message(chat_id=user_id, text=f"Ваша новая скидка: {discount}%!")
+                    await context.bot.send_message(chat_id=user_id, text=f"Ваша новая скидка: {discount} руб.!")
 
                     break
 
@@ -735,7 +735,7 @@ async def send_reservation_to_admin(update: Update, context, reservation):
     message = (
         f"Пользователь: {mention_html}\n"
         f"Данные: {user_name} {user_phone}\n"
-        f"Скидка: {user_discount}%\n"
+        f"Скидка: {user_discount} руб.\n"
         f"Дата: {reservation['date']}\n"
         f"Гости: {reservation['guests']}\n"
         f"Время: {reservation['time']}\n"
