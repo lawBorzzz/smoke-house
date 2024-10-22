@@ -326,10 +326,16 @@ async def show_edit_discount_menu(update: Update, context):
         # Логируем список пользователей для проверки
         print(f"Текущие пользователи: {user_ids}")
 
-        # Формируем список номеров телефонов и скидок
+        # Формируем список имен, номеров телефонов (последние 4 цифры) и скидок
         keyboard = [
-            [InlineKeyboardButton(f"{user_data['phone']} - {user_data.get('discount', 0)} руб.", callback_data=f"select_phone_{user_data['phone']}")]
-            for user_data in user_ids.values() if 'phone' in user_data and user_data['phone']
+            [
+                InlineKeyboardButton(
+                    f"{user_data.get('name', 'Неизвестно')} {user_data['phone'][-4:]} - {user_data.get('discount', 0)} руб.",
+                    callback_data=f"select_phone_{user_data['phone']}"
+                )
+            ]
+            for user_data in user_ids.values() 
+            if 'phone' in user_data and user_data['phone'] and len(user_data['phone']) >= 4
         ]
         
         if keyboard:  # Если есть номера для выбора
