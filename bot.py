@@ -538,9 +538,10 @@ async def handle_main_menu_buttons(update: Update, context):
     elif query.data == "about_us":
         # Показываем подменю о заведении
         keyboard = [
-            [InlineKeyboardButton("Контакты", callback_data="contacts")],
-            [InlineKeyboardButton("Наш персонал", callback_data="our_staff")],
-            [InlineKeyboardButton("О заведении", callback_data="about_establishment")],
+            [InlineKeyboardButton("📞 Контакты", callback_data="contacts")],
+            [InlineKeyboardButton("👥 Наш персонал", callback_data="our_staff")],
+            [InlineKeyboardButton("🏠 О заведении", callback_data="about_establishment")],
+            [InlineKeyboardButton("👨‍💻 О создателе", callback_data="about_creator")],
             [InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]
         ]
         await query.message.reply_text("Информация о нас:", reply_markup=InlineKeyboardMarkup(keyboard))
@@ -613,6 +614,21 @@ async def handle_main_menu_buttons(update: Update, context):
                 await query.message.reply_photo(media_group[0].media)
     
         await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+
+    elif query.data == "about_creator":
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="about_us")]]  # Кнопка "⬅ Назад" для возвращения к разделу "О нас"
+        creator_message = (
+            "Привет! 😊\n\n"
+            "Меня зовут Данила, и я создал этого бота на платформе Python 🤖\n"
+            "Я занимаюсь разработкой телеграм-ботов под любые задачи. Если вам нужно создать бота для вашего бизнеса или личного проекта, вы можете связаться со мной. \n\n"
+            "Вот моя ссылка на Телеграм: [@devborzzz](https://t.me/devborzzz)"
+        )
+        await query.message.reply_text(
+            creator_message,
+            parse_mode=ParseMode.MARKDOWN,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup(keyboard)  # Добавляем клавиатуру с кнопкой "Назад"
+        )
 
     elif query.data == "admin_menu":
         if is_admin(query.from_user.id):
@@ -1768,7 +1784,7 @@ def add_handlers(app):
     app.add_handler(CommandHandler("edit_discount", handle_edit_discount))
     app.add_handler(CommandHandler("booking_list", show_booking_list))
 
-    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|admin_menu|back_to_main)$"))
+    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|back_to_main)$"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^calendar_"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^date_"))
     app.add_handler(CallbackQueryHandler(handle_guest_selection, pattern=r"^guests_"))
