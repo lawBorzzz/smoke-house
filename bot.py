@@ -616,7 +616,7 @@ async def handle_main_menu_buttons(update: Update, context):
         await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif query.data == "about_creator":
-        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="about_us")]]  # Кнопка "⬅ Назад" для возвращения к разделу "О нас"
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]  # Кнопка "⬅ Назад" для возвращения к разделу "О нас"
         creator_message = (
             "Привет! 😊\n\n"
             "Меня зовут Данила, и я создал этого бота на платформе Python 🤖\n"
