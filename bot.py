@@ -195,7 +195,7 @@ async def cleanup_old_reservations(context):
             try:
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text = "😊 Спасибо, что посетили наше заведение! Мы надеемся, что вам понравилось! Если это так, будем рады вашему отзыву. 🌟 Оставить отзыв можно по любой удобной вам ссылке: \n\n✍️ Яндекс: https://yandex.ru/maps/-/CDhYEXLK \n📍 2gis: https://go.2gis.com/iso24 \n\nТакже, если вы захотите отблагодарить наш персонал за качественное обслуживание, вы можете оставить им приятный подарок в виде чаевых по ссылке: (ссылка) 🎁"
+                    text = "😊 Спасибо, что посетили наше заведение! Мы надеемся, что вам понравилось! Если это так, будем рады вашему отзыву. 🌟 Оставить отзыв можно по любой удобной вам ссылке: \n\n✍️ Яндекс: https://yandex.ru/maps/-/CDhYEXLK \n📍 2gis: https://go.2gis.com/iso24 \n\nТакже, если вы захотите отблагодарить наш персонал за качественное обслуживание, вы можете оставить им приятный подарок в виде чаевых 🎁"
                 )
             except Exception as e:
                 print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
@@ -273,7 +273,7 @@ admins = load_admins()
 admin_names = ["Маша", "Аня", "Паша"]
 hookah_master_names = ["Родион", "Паша", "Андрей"]
 # Возможные призы
-prizes = ["Сертификат на 2000 руб.", "Бесплатный кальян", "Любой напиток бесплатно", "Чай бесплатно"]
+prizes = ["Кальянный сертификат на 2000 руб.", "Бесплатный кальян", "Бесплатный напиток на ваш выбор", "Бесплатный чай"]
 weights = [0.02, 0.05, 0.25, 0.68]  # Веса, соответствующие шансам в процентах
 
 # Активные сотрудники
@@ -345,6 +345,7 @@ async def check_registration(update: Update, context):
 
     # Проверяем наличие номера телефона и имени
     if not user_data.get('phone'):
+        await update.callback_query.message.reply_text("Заполняя анкету вы даете согласие на обработку персональных данных.")
         await update.callback_query.message.reply_text("Пожалуйста, введите ваш номер телефона.")
         context.user_data['awaiting_phone'] = True
         return
@@ -367,7 +368,7 @@ async def start(update: Update, context):
     if str(user_id) not in user_ids:
         # Новый пользователь — предлагаем сыграть в игру
         await update.message.reply_text(
-            "Добро пожаловать в Smoke House! У вас есть возможность сыграть в рандомайзер и выиграть приз."
+            "Добро пожаловать в Smoke House! У вас есть возможность сыграть в рандомайзер и выиграть один из призов:\n\nКальянный сертификат на 2000 руб. \n\nБесплатный кальян \n\nБесплатный напиток на ваш выбор \n\nБесплатный чай"
         )
         
         keyboard = [[InlineKeyboardButton("🎲 Сыграть в игру", callback_data="play_game")]]
@@ -382,7 +383,7 @@ async def start(update: Update, context):
     if not user_data.get('has_played', False):
         keyboard = [[InlineKeyboardButton("🎲 Сыграть в игру", callback_data="play_game")]]
         await update.message.reply_text(
-            "Добро пожаловать обратно! Хотите сыграть в игру, чтобы выиграть приз?",
+            "Добро пожаловать обратно! Хотите сыграть в игру, чтобы выиграть один из призов? \n\nКальянный сертификат на 2000 руб. \n\nБесплатный кальян \n\nБесплатный напиток на ваш выбор \n\nБесплатный чай",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
@@ -737,7 +738,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
+        f"Вы в админ меню. Выберите действие:\nВерсия 3.0",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -1084,29 +1085,41 @@ async def show_calendar(query, selected_date=None, current_month=None):
         'November': 'Ноябрь',
         'December': 'Декабрь'
     }
-    
     # Преобразуем название месяца
-    month_name_ru_translated = month_name_ru.get(month_name, month_name)  # Получаем перевод или оставляем оригинал
+    month_name_ru_translated = month_name_ru.get(month_name, month_name)
+
+    # Создаем календарь для текущего месяца
+    cal = calendar.Calendar(firstweekday=calendar.MONDAY)
+    month_days = list(cal.itermonthdays(current_month.year, current_month.month))
 
     keyboard = []
-    today = datetime.now().date()  # Получаем текущую дату в формате date
+    today = datetime.now().date()  # Получаем текущую дату
 
     # Кнопки для выбора даты
-    for week in range(5):
-        row = []
-        for day in range(7):
-            day_date = (current_month + timedelta(days=(week * 7 + day))).date()  # Приводим к формату date
-            if day_date.month == current_month.month:
-                button_text = f"{day_date.day}"
-                if day_date < today:  # Сравниваем объекты одного типа (date)
-                    button_text += "❌"  # Красный крестик на прошедших датах
-                row.append(InlineKeyboardButton(button_text, callback_data=f"date_{day_date}"))
-        if row:
-            keyboard.append(row)
+    week_row = []
+    for idx, day in enumerate(month_days):
+        if day == 0:
+            # Пустые дни (не относящиеся к текущему месяцу)
+            week_row.append(InlineKeyboardButton(" ", callback_data="ignore"))
+        else:
+            day_date = datetime(current_month.year, current_month.month, day).date()
+            button_text = f"{day_date.day}"
+            if day_date < today:  # Сравниваем объекты одного типа (date)
+                button_text += "❌"  # Красный крестик на прошедших датах
+            week_row.append(InlineKeyboardButton(button_text, callback_data=f"date_{day_date}"))
+
+        # Добавляем неделю в клавиатуру
+        if (idx + 1) % 7 == 0:
+            keyboard.append(week_row)
+            week_row = []
+
+    # Добавляем последнюю неделю, если она не пуста
+    if week_row:
+        keyboard.append(week_row)
 
     # Кнопки для переключения между месяцами
-    prev_month = current_month - timedelta(days=30)
-    next_month = current_month + timedelta(days=30)
+    prev_month = (current_month - timedelta(days=1)).replace(day=1)
+    next_month = (current_month + timedelta(days=31)).replace(day=1)
     keyboard.append([
         InlineKeyboardButton("<<", callback_data=f"calendar_{prev_month.isoformat()}"),
         InlineKeyboardButton(">>", callback_data=f"calendar_{next_month.isoformat()}")
@@ -1116,7 +1129,7 @@ async def show_calendar(query, selected_date=None, current_month=None):
     await query.message.delete()
 
     # Отправляем новое сообщение с названием месяца на русском
-    await query.message.reply_text(f"Выберите дату ({month_name_ru_translated}):", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.message.reply_text(f"Выберите дату {month_name_ru_translated}:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 # Обработка выбора даты
 async def handle_calendar(update: Update, context):
@@ -1126,7 +1139,7 @@ async def handle_calendar(update: Update, context):
     if query.data.startswith("calendar_"):
         current_month = datetime.fromisoformat(query.data.split('_')[1])
         await show_calendar(query, current_month=current_month)
-    else:
+    elif query.data.startswith("date_"):
         selected_date_str = query.data.split('_')[1]
         user_id = query.from_user.id
 
@@ -1143,9 +1156,6 @@ async def handle_calendar(update: Update, context):
         # Сохраняем дату в формате "дд-мм-гггг"
         formatted_date = selected_date.strftime("%d-%m-%Y")
         reservations[user_id]['date'] = formatted_date
-
-        # Отправляем сообщение пользователю с отформатированной датой
-        await query.message.reply_text(f"Вы выбрали дату: {formatted_date}. Не забудьте!")
 
         # Переходим к выбору гостей
         keyboard = [[InlineKeyboardButton(f"{i}", callback_data=f"guests_{i}") for i in range(1, 11)]]
@@ -1694,7 +1704,13 @@ async def confirm_reservation(update: Update, context):
         # Сохранение в файл
         save_reservations()
 
-        await context.bot.send_message(chat_id=user_id, text="Ваша бронь подтверждена!\nЖдём вас с нетерпением к нам в гости!")
+        # Формируем сообщение с информацией о подтвержденной брони
+        confirmation_message = (
+            f"Ваша бронь подтверждена!\n"
+            f"Ждём вас {reservation['date']} в {reservation['time']} с нетерпением к нам в гости!"
+        )
+
+        await context.bot.send_message(chat_id=user_id, text=confirmation_message)
         reset_user_state(user_id)
         await query.message.delete()
 
