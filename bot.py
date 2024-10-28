@@ -11,6 +11,7 @@ from dateutil.relativedelta import relativedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from telegram.constants import ParseMode
+from multiprocessing import context
 
 logging.basicConfig(level=logging.INFO)
 
@@ -390,12 +391,41 @@ async def start(update: Update, context):
     await show_main_menu(update, context)
 
 # Функция для обработки кнопки "Назад"
+async def handle_back_menu(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+
+    # Удаляем текущее сообщение
+    await query.message.delete()
+
+
 async def handle_back_button(update: Update, context):
     query = update.callback_query
     await query.answer()
 
     # Удаляем текущее сообщение
     await query.message.delete()
+
+    # Отображаем главное меню
+    await show_main_menu(update, context)
+
+# Обработка для кнопки "Назад" в подпунктах раздела "О нас"
+async def handle_back_about(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+
+    # Удаляем текущее сообщение
+    await query.message.delete()
+
+    # Показываем подменю "О нас" после нажатия кнопки "Назад"
+    keyboard = [
+        [InlineKeyboardButton("📞 Контакты", callback_data="contacts")],
+        [InlineKeyboardButton("👥 Наш персонал", callback_data="our_staff")],
+        [InlineKeyboardButton("🏠 О заведении", callback_data="about_establishment")],
+        [InlineKeyboardButton("👨‍💻 О создателе", callback_data="about_creator")],
+        [InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]
+    ]
+    await query.message.reply_text("Информация о нас:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 # Отображение основного меню
 async def show_main_menu(update: Update, context):
@@ -459,10 +489,11 @@ async def handle_main_menu_buttons(update: Update, context):
 
     # Обработка для эксклюзивного меню
     elif query.data == "exclusive_menu":
+        await query.message.delete()
         data = load_exclusive_menu()
         text = data.get("text", "Эксклюзивное меню:\n[Ваше сообщение здесь]")
         photos = data.get("photos", [])
-    
+        
         keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]
         if is_user_admin:
             keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data="edit_exclusive_menu")])
@@ -471,22 +502,26 @@ async def handle_main_menu_buttons(update: Update, context):
         if photos:
             media_group = []
             # Создаем список объектов InputMediaPhoto для отправки группы фото
-            for photo in photos:
-                media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    # К первой фотографии добавляем текст в качестве подписи
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
             
-            # Отправляем фото как медиа-группу
-            if len(media_group) > 1:
-                await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-            elif len(media_group) == 1:
-                # Если только одно фото, отправляем его отдельно
-                await query.message.reply_photo(media_group[0].media)
-            
-            await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+            # Отправляем фото как медиа-группу с текстом в подписи к первой фотографии
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
         else:
+            # Если фотографий нет, просто отправляем текст
             await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+    
+        # Отправляем клавиатуру "назад" после отправки медиа-группы
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
+
 
     # Обработка для сезонного меню
     elif query.data == "seasonal_menu":
+        await query.message.delete()
         data = load_data(SEASONAL_MENU_FILE, {"text": "Сезонное меню:\n[Ваше сообщение здесь]", "photos": []})
         text = data.get("text", "Сезонное меню:\n[Ваше сообщение здесь]")
         photos = data.get("photos", [])
@@ -498,20 +533,26 @@ async def handle_main_menu_buttons(update: Update, context):
     
         if photos:
             media_group = []
-            for photo in photos:
-                media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
-    
-            if len(media_group) > 1:
-                await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-            elif len(media_group) == 1:
-                await query.message.reply_photo(media_group[0].media)
-    
-            await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+            # Создаем список объектов InputMediaPhoto для отправки группы фото
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    # К первой фотографии добавляем текст в качестве подписи
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            
+            # Отправляем фото как медиа-группу с текстом в подписи к первой фотографии
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
         else:
+            # Если фотографий нет, просто отправляем текст
             await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
     
+        # Отправляем клавиатуру "назад" после отправки медиа-группы
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
+
     # Обработка для мероприятий
     elif query.data == "events":
+        await query.message.delete()
         data = load_data(EVENTS_FILE, {"text": "Наши мероприятия:\n[Ваше сообщение здесь]", "photos": []})
         text = data.get("text", "Наши мероприятия:\n[Ваше сообщение здесь]")
         photos = data.get("photos", [])
@@ -523,19 +564,25 @@ async def handle_main_menu_buttons(update: Update, context):
     
         if photos:
             media_group = []
-            for photo in photos:
-                media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
-    
-            if len(media_group) > 1:
-                await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-            elif len(media_group) == 1:
-                await query.message.reply_photo(media_group[0].media)
-    
-            await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+            # Создаем список объектов InputMediaPhoto для отправки группы фото
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    # К первой фотографии добавляем текст в качестве подписи
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            
+            # Отправляем фото как медиа-группу с текстом в подписи к первой фотографии
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
         else:
+            # Если фотографий нет, просто отправляем текст
             await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+    
+        # Отправляем клавиатуру "назад" после отправки медиа-группы
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
     
     elif query.data == "about_us":
+        await query.message.delete()
         # Показываем подменю о заведении
         keyboard = [
             [InlineKeyboardButton("📞 Контакты", callback_data="contacts")],
@@ -547,76 +594,80 @@ async def handle_main_menu_buttons(update: Update, context):
         await query.message.reply_text("Информация о нас:", reply_markup=InlineKeyboardMarkup(keyboard))
 
         # Обработка для контактов
+        # Обработка для подпунктов раздела "О нас"
     elif query.data == "contacts":
+        await query.message.delete()
         data = load_data(ABOUT_US_FILE, {"contacts": {"text": "Контакты:\n[Ваше сообщение здесь]", "photos": []}})
         text = data["contacts"].get("text", "Контакты:\n[Ваше сообщение здесь]")
         photos = data["contacts"].get("photos", [])
     
-        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_about_us")]]
         if is_user_admin:
             keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data="edit_contacts")])
             keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data="clear_photos_contacts")])
     
         if photos:
             media_group = []
-            for photo in photos:
-                media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    # К первой фотографии добавляем текст в качестве подписи
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
     
-            if len(media_group) > 1:
-                await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-            elif len(media_group) == 1:
-                await query.message.reply_photo(media_group[0].media)
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
     
-        await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+        # Отправляем клавиатуру "назад" после отправки медиа-группы
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
     
-    # Обработка для нашего персонала
     elif query.data == "our_staff":
+        await query.message.delete()
         data = load_data(ABOUT_US_FILE, {"our_staff": {"text": "Наш персонал:\n[Ваше сообщение здесь]", "photos": []}})
         text = data["our_staff"].get("text", "Наш персонал:\n[Ваше сообщение здесь]")
         photos = data["our_staff"].get("photos", [])
     
-        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_about_us")]]
         if is_user_admin:
             keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data="edit_our_staff")])
             keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data="clear_photos_our_staff")])
     
         if photos:
             media_group = []
-            for photo in photos:
-                media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
     
-            if len(media_group) > 1:
-                await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-            elif len(media_group) == 1:
-                await query.message.reply_photo(media_group[0].media)
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
     
-        await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
     
-    # Обработка для раздела "О заведении"
     elif query.data == "about_establishment":
+        await query.message.delete()
         data = load_data(ABOUT_US_FILE, {"about_establishment": {"text": "О заведении:\n[Ваше сообщение здесь]", "photos": []}})
         text = data["about_establishment"].get("text", "О заведении:\n[Ваше сообщение здесь]")
         photos = data["about_establishment"].get("photos", [])
     
-        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_about_us")]]
         if is_user_admin:
             keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data="edit_about_establishment")])
             keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data="clear_photos_about_establishment")])
     
         if photos:
             media_group = []
-            for photo in photos:
-                media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
     
-            if len(media_group) > 1:
-                await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-            elif len(media_group) == 1:
-                await query.message.reply_photo(media_group[0].media)
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
     
-        await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
+    
     elif query.data == "about_creator":
-        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]  # Кнопка "⬅ Назад" для возвращения к разделу "О нас"
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_menu")]]  # Кнопка "⬅ Назад" для возвращения к разделу "О нас"
         creator_message = (
             "Привет! 😊\n\n"
             "Меня зовут Данила, и я создал этого бота на платформе Python 🤖\n"
@@ -638,6 +689,13 @@ async def handle_main_menu_buttons(update: Update, context):
 
     elif query.data == "back_to_main":
         await handle_back_button(update, context)
+
+    # Обработка для возврата в раздел "О нас"
+    elif query.data == "back_to_about_us":
+        await handle_back_about(update, context)
+
+    elif query.data == "back_to_menu":
+        await handle_back_menu(update, context)
 
 # Обработка команд редактирования для новых пунктов "О нас"
 async def handle_about_us_edit(update: Update, context):
@@ -1784,7 +1842,7 @@ def add_handlers(app):
     app.add_handler(CommandHandler("edit_discount", handle_edit_discount))
     app.add_handler(CommandHandler("booking_list", show_booking_list))
 
-    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|back_to_main)$"))
+    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|back_to_main|back_to_menu|back_to_about_us)$"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^calendar_"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^date_"))
     app.add_handler(CallbackQueryHandler(handle_guest_selection, pattern=r"^guests_"))
@@ -1799,7 +1857,8 @@ def add_handlers(app):
     app.add_handler(CallbackQueryHandler(handle_phone_selection, pattern=r"^select_phone_"))
     app.add_handler(CallbackQueryHandler(show_booking_list, pattern=r"^booking_list$"))
     app.add_handler(CallbackQueryHandler(handle_about_us_edit, pattern=r"^(edit_contacts|edit_our_staff|edit_about_establishment)$"))
-    
+    app.add_handler(CallbackQueryHandler(handle_back_about, pattern=r"^back_to_about_us$"))
+    app.add_handler(CallbackQueryHandler(handle_back_button, pattern=r"^back_to_menu$"))
     
 
     # Хендлер для выбора редактируемого сообщения
