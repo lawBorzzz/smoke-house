@@ -6,7 +6,7 @@ import calendar  # Для получения названия месяца
 from datetime import datetime, timedelta
 from random import choice, choices
 import threading
-
+import pytz
 from dateutil.relativedelta import relativedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
@@ -108,19 +108,19 @@ def save_data(file_path, data):
     with open(file_path, 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
 
-# Функция для загрузки сообщения из файла
+    # Функция для загрузки сообщения из файла
 def load_message(file_path, default_message):
     if os.path.exists(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
     return default_message
 
-# Функция для сохранения сообщения в файл
+    # Функция для сохранения сообщения в файл
 def save_message(file_path, message):
     with open(file_path, 'w', encoding='utf-8') as file:
         file.write(message)
 
-# Загрузка всех сообщений при старте
+    # Загрузка всех сообщений при старте
 def load_all_messages(app):
     # Загрузка эксклюзивного меню
     exclusive_menu_data = load_data(EXCLUSIVE_MENU_FILE, {"text": "Эксклюзивное меню:\n[Ваше сообщение здесь]", "photos": []})
@@ -177,15 +177,18 @@ admin_clarifications = {}  # Словарь для уточнения админ
 clarifying_reservation = {} # для отслеживания запросов на уточнение брони
 
 async def cleanup_old_reservations(context):
-    current_time = datetime.now()
+    current_time_utc = datetime.now(pytz.utc)  # Текущее время в UTC
     to_remove = []
 
     for booking_id, booking in confirmed_reservations.items():
+        # Получаем время бронирования в UTC
         booking_datetime_str = f"{booking['date']} {booking['time']}"
-        booking_datetime = datetime.strptime(booking_datetime_str, "%d-%m-%Y %H:%M")
+        local_tz = pytz.timezone('Europe/Moscow')
+        booking_local_time = datetime.strptime(booking_datetime_str, "%d-%m-%Y %H:%M")
+        booking_utc_time = local_tz.localize(booking_local_time).astimezone(pytz.utc)
 
         # Проверка, если бронирование старше 2 часов после назначенного времени
-        if booking_datetime + timedelta(hours=2) < current_time:
+        if booking_utc_time + timedelta(hours=2) < current_time_utc:
             to_remove.append(booking_id)
 
     for booking_id in to_remove:
@@ -195,7 +198,7 @@ async def cleanup_old_reservations(context):
             try:
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text = "😊 Спасибо, что посетили наше заведение! Мы надеемся, что вам понравилось! Если это так, будем рады вашему отзыву. 🌟 Оставить отзыв можно по любой удобной вам ссылке: \n\n✍️ Яндекс: https://yandex.ru/maps/-/CDhYEXLK \n📍 2gis: https://go.2gis.com/iso24 \n\nТакже, если вы захотите отблагодарить наш персонал за качественное обслуживание, вы можете оставить им приятный подарок в виде чаевых 🎁"
+                    text="😊 Спасибо, что посетили наше заведение! Мы надеемся, что вам понравилось! Если это так, будем рады вашему отзыву. 🌟 Оставить отзыв можно по любой удобной вам ссылке: \n\n✍️ Яндекс: https://yandex.ru/maps/-/CDhYEXLK \n📍 2gis: https://go.2gis.com/iso24 \n\nТакже, если вы захотите отблагодарить наш персонал за качественное обслуживание, вы можете оставить им приятный подарок в виде чаевых 🎁"
                 )
             except Exception as e:
                 print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
@@ -204,9 +207,6 @@ async def cleanup_old_reservations(context):
 
     # Сохранение изменений в файл
     save_reservations()
-
-    # Планирование следующей очистки через 1 час
-    app.job_queue.run_repeating(cleanup_old_reservations, interval=3600, first=1)
 
 def is_main_admin(user_id):
     return user_id in MAIN_ADMIN_IDS  # Проверяем, находится ли user_id в списке главных администраторов
@@ -738,7 +738,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 3.0",
+        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -1884,5 +1884,10 @@ def add_handlers(app):
 
 # Добавляем обработчики
 add_handlers(app)
-app.job_queue.run_repeating(cleanup_old_reservations, interval=3600, first=1)
+# Добавляем задачу в планировщик только один раз
+existing_jobs = app.job_queue.get_jobs_by_name('cleanup_old_reservations')
+
+if not existing_jobs:
+    app.job_queue.run_repeating(cleanup_old_reservations, interval=timedelta(hours=1), first=timedelta(seconds=10), name='cleanup_old_reservations')
+
 app.run_polling()
