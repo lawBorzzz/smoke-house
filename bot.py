@@ -984,7 +984,7 @@ async def show_booking_list(update, context):
             if today <= booking_date <= two_days_later:
                 # Формируем сообщение с данными бронирования
                 booking_message += (
-                    f"- Пользователь: {booking['user']}\n"
+                    f"Пользователь: {booking['user']}\n"
                     f"Телефон: {booking['phone']}\n"
                     f"Скидка: {booking['discount']} руб.\n"
                     f"Дата: {booking['date']}\n"
