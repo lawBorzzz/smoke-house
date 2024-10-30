@@ -50,7 +50,6 @@ def save_archive(data):
     try:
         with open(ARCHIVE_FILE, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
-        print(f"Архив успешно сохранен в файл {ARCHIVE_FILE}")
     except Exception as e:
         print(f"Ошибка при сохранении архива: {e}")
 
