@@ -6,8 +6,9 @@ import calendar  # Для получения названия месяца
 from datetime import datetime, timedelta
 from random import choice, choices
 import threading
-import pytz
+
 from dateutil.relativedelta import relativedelta
+import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from telegram.constants import ParseMode
@@ -17,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Ваш токен и настройка админов
 TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
-MAIN_ADMIN_IDS = [1980610942, 394468757]  # Измените на ваш ID
+MAIN_ADMIN_IDS = [1980610942, 394468757]
 
 # Пути к файлам
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +31,31 @@ EXCLUSIVE_MENU_FILE = os.path.join(CURRENT_DIR, 'exclusive_menu.json')
 SEASONAL_MENU_FILE = os.path.join(CURRENT_DIR, 'seasonal_menu.json')
 EVENTS_FILE = os.path.join(CURRENT_DIR, 'events.json')
 ABOUT_US_FILE = os.path.join(CURRENT_DIR, 'about_us.json')
+ARCHIVE_FILE = os.path.join(CURRENT_DIR, 'archive.json')
+
+# Загрузка архива из файла
+def load_archive():
+    if os.path.exists(ARCHIVE_FILE):
+        try:
+            with open(ARCHIVE_FILE, 'r', encoding='utf-8') as file:
+                return json.load(file)
+        except (json.JSONDecodeError, FileNotFoundError):
+            return {}
+    return {}
+
+# Сохранение архива
+def save_archive(data):
+    # Логирование, чтобы проверить, что функция получила корректные данные
+    print(f"Сохранение архива: {data}")
+    try:
+        with open(ARCHIVE_FILE, 'w', encoding='utf-8') as file:
+            json.dump(data, file, ensure_ascii=False, indent=4)
+        print(f"Архив успешно сохранен в файл {ARCHIVE_FILE}")
+    except Exception as e:
+        print(f"Ошибка при сохранении архива: {e}")
+
+# Инициализация архива
+archive = load_archive()
 
 # Обновленная функция для загрузки эксклюзивного меню из файла
 def load_exclusive_menu():
@@ -176,6 +202,7 @@ confirmed_reservations = load_reservations()  # Здесь будем храни
 admin_clarifications = {}  # Словарь для уточнения администратором
 clarifying_reservation = {} # для отслеживания запросов на уточнение брони
 
+# Обновленная функция для очистки старых броней и их архивирования
 async def cleanup_old_reservations(context):
     current_time_utc = datetime.now(pytz.utc)  # Текущее время в UTC
     to_remove = []
@@ -191,22 +218,65 @@ async def cleanup_old_reservations(context):
         if booking_utc_time + timedelta(hours=2) < current_time_utc:
             to_remove.append(booking_id)
 
+    # Загружаем актуальный архив перед обновлением
+    global archive
+    archive = load_archive()  # Обновляем переменную актуальными данными из файла
+
     for booking_id in to_remove:
         user_id = booking_id
         if user_id in confirmed_reservations:
+            # Добавляем удаленные бронирования в архив
+            archived_booking = confirmed_reservations[user_id]
+            archived_booking['archived_at'] = datetime.now().strftime("%d-%m-%Y %H:%M")
+
+            # Теперь архив будет в формате списка:
+            if 'reservations' not in archive:
+                archive['reservations'] = []  # Создаем список, если его еще нет
+            
+            archive['reservations'].append(archived_booking)
+
+            # Логирование для отладки
+            print(f"Архивирование брони: {booking_id}, данные: {archived_booking}")
+
             # Отправка сообщения пользователю с просьбой оставить отзыв
             try:
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text="😊 Спасибо, что посетили наше заведение! Мы надеемся, что вам понравилось! Если это так, будем рады вашему отзыву. 🌟 Оставить отзыв можно по любой удобной вам ссылке: \n\n✍️ Яндекс: https://yandex.ru/maps/-/CDhYEXLK \n📍 2gis: https://go.2gis.com/iso24 \n\nТакже, если вы захотите отблагодарить наш персонал за качественное обслуживание, вы можете оставить им приятный подарок в виде чаевых 🎁"
+                    text="😊 Спасибо, что посетили наше заведение! Мы надеемся, что вам понравилось! Если это так, будем рады вашему отзыву. 🌟 Оставить отзыв можно по любой удобной вам ссылке: \n\n✍️ Яндекс: https://yandex.ru/maps/-/CDhYEXLK \n📍 2gis: https://go.2gis.com/iso24 \n\nТакже, если вы захотите отблагодарить наш персонал за качественное обслуживание, вы можете оставить им приятный подарок в виде чаевых по ссылке: (ссылка) 🎁"
                 )
             except Exception as e:
                 print(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
+
             # Удаление бронирования
             del confirmed_reservations[user_id]
 
-    # Сохранение изменений в файл
+    # Сохранение изменений в файл с подтвержденными бронированиями
     save_reservations()
+
+    # Сохранение архива бронирований в файл
+    save_archive(archive)
+
+    # Удаляем записи из архива старше 2 суток
+    await cleanup_archive()
+
+# Обновленная функция очистки архива
+async def cleanup_archive():
+    current_time_utc = datetime.now(pytz.utc)
+    updated_archive = []
+
+    for booking in archive['reservations']:
+        try:
+            archived_at = datetime.strptime(booking['archived_at'], "%d-%m-%Y %H:%M")
+            archived_at_utc = pytz.timezone('Europe/Moscow').localize(archived_at).astimezone(pytz.utc)
+            # Если бронь старше двух суток, не добавляем её в обновленный архив
+            if archived_at_utc + timedelta(days=2) >= current_time_utc:
+                updated_archive.append(booking)
+        except Exception as e:
+            print(f"Ошибка при обработке архива: {e}")
+
+    # Обновляем архив с актуальными данными
+    archive['reservations'] = updated_archive
+    save_archive(archive)
 
 def is_main_admin(user_id):
     return user_id in MAIN_ADMIN_IDS  # Проверяем, находится ли user_id в списке главных администраторов
@@ -333,6 +403,23 @@ async def play_game(update: Update, context):
 
     # Закрываем всплывающее окно с кнопкой
     await query.answer()
+
+    # Отправляем уведомление всем администраторам
+    mention_html = query.from_user.mention_html()  # Используем mention_html для создания ссылки на пользователя
+    user_name = user_ids[str(user_id)].get('name', 'Неизвестный пользователь')
+    for admin_id in admins:
+        try:
+            await context.bot.send_message(
+                chat_id=admin_id,
+                text=(
+                    f"🎉 Пользователь: {mention_html}\n"
+                    f"Имя: {user_name}\n"
+                    f"Выиграл приз: {selected_prize}."
+                ),
+                parse_mode=ParseMode.HTML  # Используем HTML для корректного отображения ссылки
+            )
+        except Exception as e:
+            print(f"Не удалось отправить сообщение админу {admin_id}: {e}")
 
     # Проверяем регистрацию пользователя
     await check_registration(update, context)
@@ -688,6 +775,9 @@ async def handle_main_menu_buttons(update: Update, context):
         else:
             await query.message.reply_text("У вас нет прав для доступа в админ меню.")
 
+    elif query.data == "view_archive":
+        await show_archive(query)
+
     elif query.data == "back_to_main":
         await handle_back_button(update, context)
 
@@ -734,13 +824,36 @@ async def show_admin_menu(query: Update):
         [InlineKeyboardButton("📨 Рассылка", callback_data="broadcast_message")],
         [InlineKeyboardButton("🧾Редактировать скидку", callback_data="edit_discount")],
         [InlineKeyboardButton("📋Список броней", callback_data="booking_list")],
+        [InlineKeyboardButton("📦 Архив", callback_data="view_archive")],
         [InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
+        f"Вы в админ меню. Выберите действие:\nВерсия 1.5",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+
+# Обновленная функция для показа архива
+async def show_archive(query):
+    archive_data = load_archive()  # Загрузим актуальные данные архива
+    if 'reservations' in archive_data and archive_data['reservations']:
+        text = "Архив бронирований:\n\n"
+        for booking in archive_data['reservations']:
+            text += (
+                f"Пользователь: {booking['user']}\n"
+                f"Телефон: {booking['phone']}\n"
+                f"Скидка: {booking['discount']}%\n"
+                f"Дата: {booking['date']}\n"
+                f"Гости: {booking['guests']}\n"
+                f"Время: {booking['time']}\n"
+                f"Комментарий: {booking['comment']}\n"
+                f"Архивировано: {booking['archived_at']}\n"
+                f"--------------------------\n"
+            )
+    else:
+        text = "Архив пуст."
+
+    await query.message.reply_text(text)
 
 # Обработка действий в админ меню
 async def handle_admin_menu(update: Update, context):
@@ -1858,7 +1971,7 @@ def add_handlers(app):
     app.add_handler(CommandHandler("edit_discount", handle_edit_discount))
     app.add_handler(CommandHandler("booking_list", show_booking_list))
 
-    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|back_to_main|back_to_menu|back_to_about_us)$"))
+    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|view_archive|back_to_main|back_to_menu|back_to_about_us)$"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^calendar_"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^date_"))
     app.add_handler(CallbackQueryHandler(handle_guest_selection, pattern=r"^guests_"))
