@@ -1,4 +1,17 @@
+<<<<<<< HEAD
 {
     "text": "Паста",
     "photos": []
 }
+=======
+{
+    "text": "Паста",
+    "photos": [
+        "pasta_AgACAgIAAxkBAAINy2clEsZ_4Ef1RvewYu44zzAwSWDdAAKx5TEbaN8oSU8Rqqx_nehqAQADAgADeQADNgQ.jpg",
+        "pasta_AgACAgIAAxkBAAIN2mclEw9FcWVToUg6ppUyoYeY4QKrAAKi6DEbh_spSQbk5ttUBW3YAQADAgADeQADNgQ.jpg",
+        "pasta_AgACAgIAAxkBAAIN3WclExraz__V1gyZyiVZEho3UFVDAAKs6DEbh_spSbfKX6ZiR17gAQADAgADeQADNgQ.jpg",
+        "pasta_AgACAgIAAxkBAAIN4GclEyE-fFLCyN78ypzTUBmQobFIAAKu6DEbh_spSUu7s-kmBZbuAQADAgADeQADNgQ.jpg",
+        "pasta_AgACAgIAAxkBAAIN42clEys358yyY7B8vTOPg7v4qRk7AAKw6DEbh_spSQABqHQNetMTNwEAAwIAA3kAAzYE.jpg"
+    ]
+}
+>>>>>>> 9d68d7e (Save current state of menu files on the cloud)

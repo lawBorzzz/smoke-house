@@ -1,4 +1,20 @@
+<<<<<<< HEAD
 {
     "text": "Пиццы:\n[пиццы]",
     "photos": []
 }
+=======
+{
+    "text": "Пиццы",
+    "photos": [
+        "pizzas_AgACAgIAAxkBAAINj2clEdMrRdtwL4Q4VCkRF9TEEqXfAALH5TEbaN8oSTHGe-Q71CJGAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINkGclEdMvpA4Ut8Ubx8ajcnbEmpHZAALI5TEbaN8oSUJ0VqXzBtOzAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINkWclEdPQ8I1wlLAUfRAn6kUZ-YjkAALG5TEbaN8oSYRMzD6TZDodAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINomclEhbnvr8V9DJI9zUg2LXMrnXmAAKP6DEbh_spSemQQk_JZjRFAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINpWclEh2gqyVd5X8kHy4-3PDVwD0DAAKQ6DEbh_spSXoibYEKKCZmAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINqGclEjInZEVIjSlwEfUWGX6G46D2AAKR6DEbh_spSflV2dT6Y1RDAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINq2clEkffpz8SVw8b8li2ZFXBd56sAAKS6DEbh_spSUCy8JQZuzoSAQADAgADeQADNgQ.jpg",
+        "pizzas_AgACAgIAAxkBAAINrmclEk5buSOEFr7GRM_Klfnz9WvlAAKT6DEbh_spSbNyid0IBibPAQADAgADeQADNgQ.jpg"
+    ]
+}
+>>>>>>> 9d68d7e (Save current state of menu files on the cloud)

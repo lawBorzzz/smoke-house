@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 {
     "text": "Горячее:\n[Ваше сообщение здесь]",
     "photos": []
 }
+=======
+{
+    "text": "Горячее",
+    "photos": [
+        "hot_AgACAgIAAxkBAAIN-2clE3LpD9a-rg1lNrPF1wLzZZl2AALD5TEbaN8oSe5mIwP9Js_yAQADAgADeQADNgQ.jpg"
+    ]
+}
+>>>>>>> 9d68d7e (Save current state of menu files on the cloud)
