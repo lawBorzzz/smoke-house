@@ -10,7 +10,7 @@ import threading
 from dateutil.relativedelta import relativedelta
 import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from telegram.constants import ParseMode
 from multiprocessing import context
 
@@ -964,7 +964,6 @@ async def handle_edit_perchini_item(update: Update, context):
         context.user_data['state'] = 'edit_desserts'
 
 async def show_perchini_item(query, data, item_type, context):
-    # Здесь context передается из библиотеки Telegram, а не multiprocessing
     text = data.get("text", "[Ваше сообщение здесь]")
     photos = data.get("photos", [])
 
@@ -978,6 +977,7 @@ async def show_perchini_item(query, data, item_type, context):
         await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
 
     await query.message.reply_text("Выберите действие", reply_markup=InlineKeyboardMarkup(keyboard))
+
 
 # Обработка команд редактирования для новых пунктов "О нас"
 async def handle_about_us_edit(update: Update, context):
@@ -1054,11 +1054,7 @@ async def handle_admin_menu(update: Update, context):
     # Логируем данные для отладки
     print(f"Callback data: {query.data}")  # Смотрим, что за данные приходят
 
-    if query.data == "edit_perchini_menu":
-        await query.message.reply_text("Введите новый текст для Меню Перчини или отправьте новые фото.")
-        context.user_data['state'] = 'edit_perchini_menu'
-
-    elif query.data == "edit_exclusive_menu":
+    if query.data == "edit_exclusive_menu":
         await query.message.reply_text("Введите новый текст для эксклюзивного меню или отправьте новые фото.")
         context.user_data['state'] = 'edit_exclusive_menu'
 
@@ -1115,6 +1111,78 @@ async def handle_admin_menu(update: Update, context):
         data["contacts"]["photos"] = []  # Очищаем список фото
         save_data(ABOUT_US_FILE, data)  # Сохраняем обновленный файл
         await query.message.reply_text("Все фотографии раздела 'Контакты' успешно удалены.")
+        await query.answer()
+
+        # Обработка для удаления фотографий для "пиццы"
+    elif query.data == "clear_photos_pizzas":
+        data = load_data(PIZZAS_FILE, {"text": "Пицца:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(PIZZAS_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'пицца' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "паста"
+    elif query.data == "clear_photos_pasta":
+        data = load_data(PASTA_FILE, {"text": "Паста:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(PASTA_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'паста' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "горячее"
+    elif query.data == "clear_photos_hot":
+        data = load_data(HOT_FILE, {"text": "Горячее:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(HOT_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'горячее' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "фокачча и дипы"
+    elif query.data == "clear_photos_focaccia_dip":
+        data = load_data(FOCACCIA_DIP_FILE, {"text": "Фокачча и дипы:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(FOCACCIA_DIP_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'фокачча и дипы' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "закуски"
+    elif query.data == "clear_photos_snacks":
+        data = load_data(SNACKS_FILE, {"text": "Закуски:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(SNACKS_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'закуски' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "салаты"
+    elif query.data == "clear_photos_salads":
+        data = load_data(SALADS_FILE, {"text": "Салаты:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(SALADS_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'салаты' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "супы"
+    elif query.data == "clear_photos_soups":
+        data = load_data(SOUPS_FILE, {"text": "Супы:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(SOUPS_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'супы' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "гриль"
+    elif query.data == "clear_photos_grill":
+        data = load_data(GRILL_FILE, {"text": "Гриль:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(GRILL_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'гриль' успешно удалены.")
+        await query.answer()
+    
+    # Обработка для удаления фотографий для "десерты"
+    elif query.data == "clear_photos_desserts":
+        data = load_data(DESSERTS_FILE, {"text": "Десерты:\n[Ваше сообщение здесь]", "photos": []})
+        data["photos"] = []  # Очищаем список фото
+        save_data(DESSERTS_FILE, data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии раздела 'десерты' успешно удалены.")
         await query.answer()
 
     # Обработка очистки фотографий для "Наш персонал"
@@ -1209,8 +1277,6 @@ async def handle_admin_menu(update: Update, context):
     # Обработка нажатия на "Назад"
     elif query.data == "go_back":
         await show_admin_menu(query)
-
-    await query.message.delete()
 
 # Обработка удаления админа
 async def handle_admin_removal(update: Update, context):
@@ -2349,7 +2415,16 @@ def add_handlers(app):
     app.add_handler(CallbackQueryHandler(handle_back_button, pattern=r"^back_to_menu$"))
     app.add_handler(CallbackQueryHandler(handle_perchini_submenu, pattern=r"^(pizzas|pasta|hot|focaccia_dip|snacks|salads|soups|grill|desserts)$"))
     app.add_handler(CallbackQueryHandler(handle_edit_perchini_item, pattern=r"^(edit_pizzas|edit_pasta|edit_hot|edit_focaccia_dip|edit_snacks|edit_salads|edit_soups|edit_grill|edit_desserts)$"))
-
+    # Хендлеры для очистки фотографий меню Перчини
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_pizzas$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_pasta$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_hot$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_focaccia_dip$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_snacks$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_salads$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_soups$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_grill$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^clear_photos_desserts$"))
 
     # Хендлер для выбора редактируемого сообщения
     app.add_handler(MessageHandler(filters.PHOTO, handle_message))  # Обработка фото
