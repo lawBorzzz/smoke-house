@@ -25,6 +25,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ADMINS_FILE = os.path.join(CURRENT_DIR, 'admins.json')
 USER_IDS_FILE = os.path.join(CURRENT_DIR, 'user_ids.json')
 RESERVATIONS_FILE = os.path.join(CURRENT_DIR, 'reservations.json')
+PERCHINI_MENU_FILE = os.path.join(CURRENT_DIR, 'perchini_menu.json')
 
 # Пути к файлам сообщений
 EXCLUSIVE_MENU_FILE = os.path.join(CURRENT_DIR, 'exclusive_menu.json')
@@ -46,7 +47,7 @@ def load_archive():
 # Сохранение архива
 def save_archive(data):
     # Логирование, чтобы проверить, что функция получила корректные данные
-    print(f"Сохранение архива")
+    print(f"Сохранение архива: {data}")
     try:
         with open(ARCHIVE_FILE, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
@@ -55,6 +56,14 @@ def save_archive(data):
 
 # Инициализация архива
 archive = load_archive()
+
+# Загрузка данных "Меню Перчини" из файла
+def load_perchini_menu():
+    return load_data(PERCHINI_MENU_FILE, {"text": "Меню Перчини:\n[Ваше сообщение здесь]", "photos": []})
+
+# Сохранение данных "Меню Перчини" в файл
+def save_perchini_menu(data):
+    save_data(PERCHINI_MENU_FILE, data)
 
 # Обновленная функция для загрузки эксклюзивного меню из файла
 def load_exclusive_menu():
@@ -107,6 +116,7 @@ def load_data(file_path, default_data):
 
 def ensure_files_exist():
     files_and_defaults = [
+        (PERCHINI_MENU_FILE, {"text": "Ваше сообщение", "photos": []}),
         (EXCLUSIVE_MENU_FILE, {"text": "Ваше сообщение", "photos": []}),
         (SEASONAL_MENU_FILE, {"text": "Ваше сообщение", "photos": []}),
         (EVENTS_FILE, {"text": "Наши мероприятия:\n[Ваше сообщение здесь]", "photos": []}),
@@ -150,11 +160,15 @@ def load_all_messages(app):
     # Загрузка эксклюзивного меню
     exclusive_menu_data = load_data(EXCLUSIVE_MENU_FILE, {"text": "Эксклюзивное меню:\n[Ваше сообщение здесь]", "photos": []})
     app.bot_data['exclusive_menu'] = exclusive_menu_data
-    
+
     # Загрузка сезонного меню
     seasonal_menu_data = load_data(SEASONAL_MENU_FILE, {"text": "Сезонное меню:\n[Ваше сообщение здесь]", "photos": []})
     app.bot_data['seasonal_menu'] = seasonal_menu_data
-    
+
+    # Загрузка меню Перчини
+    perchini_menu_data = load_data(PERCHINI_MENU_FILE, {"text": "Меню Перчини:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['perchini_menu'] = perchini_menu_data
+
     # Загрузка мероприятий
     events_data = load_data(EVENTS_FILE, {"text": "Наши мероприятия:\n[Ваше сообщение здесь]", "photos": []})
     app.bot_data['events'] = events_data
@@ -233,9 +247,6 @@ async def cleanup_old_reservations(context):
                 archive['reservations'] = []  # Создаем список, если его еще нет
             
             archive['reservations'].append(archived_booking)
-
-            # Логирование для отладки
-            print(f"Архивирование брони: {booking_id}, данные: {archived_booking}")
 
             # Отправка сообщения пользователю с просьбой оставить отзыв
             try:
@@ -342,8 +353,8 @@ admins = load_admins()
 admin_names = ["Маша", "Аня", "Паша"]
 hookah_master_names = ["Родион", "Паша", "Андрей"]
 # Возможные призы
-prizes = ["Бесплатный кальян", "Бесплатный напиток на ваш выбор", "Бесплатный чай"]
-weights = [0.05, 0.25, 0.70]  # Веса, соответствующие шансам в процентах
+prizes = ["Кальянный сертификат на 2000 руб.", "Бесплатный кальян", "Бесплатный напиток на ваш выбор", "Бесплатный чай"]
+weights = [0.02, 0.05, 0.25, 0.68]  # Веса, соответствующие шансам в процентах
 
 # Активные сотрудники
 active_staff = {
@@ -458,7 +469,7 @@ async def start(update: Update, context):
     if str(user_id) not in user_ids:
         # Новый пользователь — предлагаем сыграть в игру
         await update.message.reply_text(
-            "Добро пожаловать в Smoke House! 🎉 У вас есть возможность сыграть в рандомайзер и выиграть один из призов:\n\n🎁 Кальянный сертификат на 2000 руб. \n\n💨 Бесплатный кальян \n\n🥤 Бесплатный напиток на ваш выбор \n\n🍵Бесплатный чай"
+            "Добро пожаловать в Smoke House! У вас есть возможность сыграть в рандомайзер и выиграть один из призов:\n\nКальянный сертификат на 2000 руб. \n\nБесплатный кальян \n\nБесплатный напиток на ваш выбор \n\nБесплатный чай"
         )
         
         keyboard = [[InlineKeyboardButton("🎲 Сыграть в игру", callback_data="play_game")]]
@@ -473,7 +484,7 @@ async def start(update: Update, context):
     if not user_data.get('has_played', False):
         keyboard = [[InlineKeyboardButton("🎲 Сыграть в игру", callback_data="play_game")]]
         await update.message.reply_text(
-            "Добро пожаловать обратно! 🎉 Хотите сыграть в игру, чтобы выиграть один из призов? \n\n🎁 Кальянный сертификат на 2000 руб. \n\n💨 Бесплатный кальян \n\n🥤 Бесплатный напиток на ваш выбор \n\n🍵Бесплатный чай",
+            "Добро пожаловать обратно! Хотите сыграть в игру, чтобы выиграть один из призов? \n\nКальянный сертификат на 2000 руб. \n\nБесплатный кальян \n\nБесплатный напиток на ваш выбор \n\nБесплатный чай",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
@@ -537,6 +548,7 @@ async def show_main_menu(update: Update, context):
     # Создаем клавиатуру для основного меню
     keyboard = [
         [InlineKeyboardButton("📋 Эксклюзивное меню", callback_data="exclusive_menu")],
+        [InlineKeyboardButton("🌶️ Меню Перчини", callback_data="perchini_menu")],
         [InlineKeyboardButton("🌱 Сезонное меню", callback_data="seasonal_menu")],
         [InlineKeyboardButton("🏠 О нас", callback_data="about_us")],
         [InlineKeyboardButton("🎉 Мероприятия", callback_data="events")]
@@ -577,6 +589,37 @@ async def handle_main_menu_buttons(update: Update, context):
 
     elif query.data == "book_table":
         await show_calendar(query, context)  # Запускаем процесс бронирования
+
+    # Обработка для Меню Перчини
+    elif query.data == "perchini_menu":
+        await query.message.delete()
+        data = load_perchini_menu()
+        text = data.get("text", "Меню Перчини:\n[Ваше сообщение здесь]")
+        photos = data.get("photos", [])
+
+        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]
+        if is_user_admin:
+            keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data="edit_perchini_menu")])
+            keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data="clear_photos_perchini_menu")])
+
+        if photos:
+            media_group = []
+            # Создаем список объектов InputMediaPhoto для отправки группы фото
+            for idx, photo in enumerate(photos):
+                if idx == 0:
+                    # К первой фотографии добавляем текст в качестве подписи
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
+                else:
+                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
+            
+            # Отправляем фото как медиа-группу с текстом в подписи к первой фотографии
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
+        else:
+            # Если фотографий нет, просто отправляем текст
+            await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+
+        # Отправляем клавиатуру "назад" после отправки медиа-группы
+        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
 
     # Обработка для эксклюзивного меню
     elif query.data == "exclusive_menu":
@@ -832,7 +875,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 1.5",
+        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -866,7 +909,18 @@ async def handle_admin_menu(update: Update, context):
     # Логируем данные для отладки
     print(f"Callback data: {query.data}")  # Смотрим, что за данные приходят
 
-    if query.data == "edit_exclusive_menu":
+    if query.data == "edit_perchini_menu":
+        await query.message.reply_text("Введите новый текст для Меню Перчини или отправьте новые фото.")
+        context.user_data['state'] = 'edit_perchini_menu'
+
+    elif query.data == "clear_photos_perchini_menu":
+        data = load_perchini_menu()
+        data["photos"] = []  # Очищаем список фото
+        save_perchini_menu(data)  # Сохраняем обновленный файл
+        await query.message.reply_text("Все фотографии Меню Перчини успешно удалены.")
+        await query.answer()
+
+    elif query.data == "edit_exclusive_menu":
         await query.message.reply_text("Введите новый текст для эксклюзивного меню или отправьте новые фото.")
         context.user_data['state'] = 'edit_exclusive_menu'
 
@@ -1427,6 +1481,30 @@ async def handle_message(update: Update, context):
         context.user_data['state'] = None
         return
 
+    # Редактирование Меню Перчини
+    elif context.user_data.get('state') == 'edit_perchini_menu':
+        data = load_perchini_menu()
+    
+        if message_text:
+            data["text"] = message_text
+    
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"perchini_menu_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+            else:
+                await update.message.reply_text("Достигнут лимит в 10 фотографий для Меню Перчини. Удалите одну, чтобы добавить новую.")
+    
+        save_perchini_menu(data)
+        await update.message.reply_text("Меню Перчини успешно обновлено.")
+        context.user_data['state'] = None
+        return
+
     # Обработка редактирования эксклюзивного меню
     elif context.user_data.get('state') == 'edit_exclusive_menu':
         data = load_exclusive_menu()
@@ -1974,7 +2052,7 @@ def add_handlers(app):
     app.add_handler(CommandHandler("edit_discount", handle_edit_discount))
     app.add_handler(CommandHandler("booking_list", show_booking_list))
 
-    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|view_archive|back_to_main|back_to_menu|back_to_about_us)$"))
+    app.add_handler(CallbackQueryHandler(handle_main_menu_buttons, pattern=r"^(play_game|book_table|perchini_menu|exclusive_menu|seasonal_menu|about_us|events|contacts|our_staff|about_establishment|about_creator|admin_menu|view_archive|back_to_main|back_to_menu|back_to_about_us)$"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^calendar_"))
     app.add_handler(CallbackQueryHandler(handle_calendar, pattern=r"^date_"))
     app.add_handler(CallbackQueryHandler(handle_guest_selection, pattern=r"^guests_"))
@@ -1984,7 +2062,7 @@ def add_handlers(app):
     app.add_handler(CallbackQueryHandler(clarify_reservation, pattern=r"^clarify_"))
     app.add_handler(CallbackQueryHandler(handle_shift_selection, pattern=r"^(take_shift|set_admin|set_hookah_master)$"))
     app.add_handler(CallbackQueryHandler(handle_staff_choice, pattern=r"^choose_admin_|choose_hookah_master_"))
-    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^(clear_photos_exclusive_menu|clear_photos_seasonal_menu|clear_photos_events|clear_photos_contacts|clear_photos_our_staff|clear_photos_about_establishment|list_admins|add_admin|remove_admin|broadcast_message|edit_discount|edit_exclusive_menu|edit_seasonal_menu|edit_events|go_back)$"))
+    app.add_handler(CallbackQueryHandler(handle_admin_menu, pattern=r"^(clear_photos_exclusive_menu|clear_photos_seasonal_menu|clear_photos_events|clear_photos_contacts|clear_photos_our_staff|clear_photos_about_establishment|clear_photos_perchini_menu|list_admins|add_admin|remove_admin|broadcast_message|edit_discount|edit_exclusive_menu|edit_seasonal_menu|edit_events|edit_perchini_menu|go_back)$"))
     app.add_handler(CallbackQueryHandler(handle_admin_removal, pattern=r"^delete_admin_\d+$"))
     app.add_handler(CallbackQueryHandler(handle_phone_selection, pattern=r"^select_phone_"))
     app.add_handler(CallbackQueryHandler(show_booking_list, pattern=r"^booking_list$"))
