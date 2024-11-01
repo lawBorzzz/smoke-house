@@ -1020,7 +1020,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Вы в админ меню. Выберите действие:\nВерсия 2.2",
+        f"Вы в админ меню. Выберите действие:\nВерсия 1.3",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
