@@ -25,7 +25,16 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ADMINS_FILE = os.path.join(CURRENT_DIR, 'admins.json')
 USER_IDS_FILE = os.path.join(CURRENT_DIR, 'user_ids.json')
 RESERVATIONS_FILE = os.path.join(CURRENT_DIR, 'reservations.json')
-PERCHINI_MENU_FILE = os.path.join(CURRENT_DIR, 'perchini_menu.json')
+PIZZAS_FILE = os.path.join(CURRENT_DIR, 'perchini_pizzas.json')
+PASTA_FILE = os.path.join(CURRENT_DIR, 'perchini_pasta.json')
+HOT_FILE = os.path.join(CURRENT_DIR, 'perchini_hot.json')
+FOCACCIA_DIP_FILE = os.path.join(CURRENT_DIR, 'perchini_focaccia_dip.json')
+SNACKS_FILE = os.path.join(CURRENT_DIR, 'perchini_snacks.json')
+SALADS_FILE = os.path.join(CURRENT_DIR, 'perchini_salads.json')
+SOUPS_FILE = os.path.join(CURRENT_DIR, 'perchini_soups.json')
+GRILL_FILE = os.path.join(CURRENT_DIR, 'perchini_grill.json')
+DESSERTS_FILE = os.path.join(CURRENT_DIR, 'perchini_desserts.json')
+
 
 # Пути к файлам сообщений
 EXCLUSIVE_MENU_FILE = os.path.join(CURRENT_DIR, 'exclusive_menu.json')
@@ -56,14 +65,6 @@ def save_archive(data):
 
 # Инициализация архива
 archive = load_archive()
-
-# Загрузка данных "Меню Перчини" из файла
-def load_perchini_menu():
-    return load_data(PERCHINI_MENU_FILE, {"text": "Меню Перчини:\n[Ваше сообщение здесь]", "photos": []})
-
-# Сохранение данных "Меню Перчини" в файл
-def save_perchini_menu(data):
-    save_data(PERCHINI_MENU_FILE, data)
 
 # Обновленная функция для загрузки эксклюзивного меню из файла
 def load_exclusive_menu():
@@ -103,6 +104,60 @@ def load_about_establishment():
 def save_about_establishment(data):
     save_data(ABOUT_US_FILE, data)
 
+def load_pizzas():
+    return load_data(PIZZAS_FILE, {"text": "Пиццы:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_pizzas(data):
+    save_data(PIZZAS_FILE, data)
+
+def load_pasta():
+    return load_data(PASTA_FILE, {"text": "Паста:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_pasta(data):
+    save_data(PASTA_FILE, data)
+
+def load_hot():
+    return load_data(HOT_FILE, {"text": "Горячее:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_hot(data):
+    save_data(HOT_FILE, data)
+
+def load_focaccia_dip():
+    return load_data(FOCACCIA_DIP_FILE, {"text": "Фокачча и дипы:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_focaccia_dip(data):
+    save_data(FOCACCIA_DIP_FILE, data)
+
+def load_snacks():
+    return load_data(SNACKS_FILE, {"text": "Закуски:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_snacks(data):
+    save_data(SNACKS_FILE, data)
+
+def load_salads():
+    return load_data(SALADS_FILE, {"text": "Салаты:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_salads(data):
+    save_data(SALADS_FILE, data)
+
+def load_soups():
+    return load_data(SOUPS_FILE, {"text": "Супы:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_soups(data):
+    save_data(SOUPS_FILE, data)
+
+def load_grill():
+    return load_data(GRILL_FILE, {"text": "Гриль:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_grill(data):
+    save_data(GRILL_FILE, data)
+
+def load_desserts():
+    return load_data(DESSERTS_FILE, {"text": "Десерты:\n[Ваше сообщение здесь]", "photos": []})
+
+def save_desserts(data):
+    save_data(DESSERTS_FILE, data)
+
 def load_data(file_path, default_data):
     if os.path.exists(file_path):
         try:
@@ -116,28 +171,40 @@ def load_data(file_path, default_data):
 
 def ensure_files_exist():
     files_and_defaults = [
-        (PERCHINI_MENU_FILE, {"text": "Ваше сообщение", "photos": []}),
-        (EXCLUSIVE_MENU_FILE, {"text": "Ваше сообщение", "photos": []}),
-        (SEASONAL_MENU_FILE, {"text": "Ваше сообщение", "photos": []}),
+        (EXCLUSIVE_MENU_FILE, {"text": "Эксклюзивное меню:\n[Ваше сообщение здесь]", "photos": []}),
+        (SEASONAL_MENU_FILE, {"text": "Сезонное меню:\n[Ваше сообщение здесь]", "photos": []}),
         (EVENTS_FILE, {"text": "Наши мероприятия:\n[Ваше сообщение здесь]", "photos": []}),
         (ABOUT_US_FILE, {
             "contacts": {"text": "Контакты:\n[Ваше сообщение здесь]", "photos": []},
             "our_staff": {"text": "Наш персонал:\n[Ваше сообщение здесь]", "photos": []},
             "about_establishment": {"text": "О заведении:\n[Ваше сообщение здесь]", "photos": []}
-        })
+        }),
+        # Новые файлы для разделов "Меню Перчини"
+        (PIZZAS_FILE, {"text": "Пиццы:\n[Ваше сообщение здесь]", "photos": []}),
+        (PASTA_FILE, {"text": "Паста:\n[Ваше сообщение здесь]", "photos": []}),
+        (HOT_FILE, {"text": "Горячее:\n[Ваше сообщение здесь]", "photos": []}),
+        (FOCACCIA_DIP_FILE, {"text": "Фокачча и дипы:\n[Ваше сообщение здесь]", "photos": []}),
+        (SNACKS_FILE, {"text": "Закуски:\n[Ваше сообщение здесь]", "photos": []}),
+        (SALADS_FILE, {"text": "Салаты:\n[Ваше сообщение здесь]", "photos": []}),
+        (SOUPS_FILE, {"text": "Супы:\n[Ваше сообщение здесь]", "photos": []}),
+        (GRILL_FILE, {"text": "Гриль:\n[Ваше сообщение здесь]", "photos": []}),
+        (DESSERTS_FILE, {"text": "Десерты:\n[Ваше сообщение здесь]", "photos": []}),
     ]
 
     for file_path, default_data in files_and_defaults:
         if not os.path.exists(file_path):
+            logging.info(f"Файл {file_path} не найден. Создаем с данными по умолчанию.")
             save_data(file_path, default_data)
         else:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                try:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
                     data = json.load(file)
                     if not isinstance(data, dict) or not all(key in data for key in default_data):
+                        logging.warning(f"Файл {file_path} имеет некорректную структуру. Перезаписываем с данными по умолчанию.")
                         save_data(file_path, default_data)
-                except (json.JSONDecodeError, FileNotFoundError):
-                    save_data(file_path, default_data)
+            except (json.JSONDecodeError, FileNotFoundError):
+                logging.error(f"Ошибка чтения файла {file_path}. Перезаписываем с данными по умолчанию.")
+                save_data(file_path, default_data)
 
 def save_data(file_path, data):
     with open(file_path, 'w', encoding='utf-8') as file:
@@ -165,10 +232,6 @@ def load_all_messages(app):
     seasonal_menu_data = load_data(SEASONAL_MENU_FILE, {"text": "Сезонное меню:\n[Ваше сообщение здесь]", "photos": []})
     app.bot_data['seasonal_menu'] = seasonal_menu_data
 
-    # Загрузка меню Перчини
-    perchini_menu_data = load_data(PERCHINI_MENU_FILE, {"text": "Меню Перчини:\n[Ваше сообщение здесь]", "photos": []})
-    app.bot_data['perchini_menu'] = perchini_menu_data
-
     # Загрузка мероприятий
     events_data = load_data(EVENTS_FILE, {"text": "Наши мероприятия:\n[Ваше сообщение здесь]", "photos": []})
     app.bot_data['events'] = events_data
@@ -181,19 +244,45 @@ def load_all_messages(app):
     })
     app.bot_data['about_us'] = about_us_data
 
+    # Загрузка данных Меню Перчини
+    app.bot_data['pizzas'] = load_data(PIZZAS_FILE, {"text": "Пиццы:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['pasta'] = load_data(PASTA_FILE, {"text": "Паста:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['hot'] = load_data(HOT_FILE, {"text": "Горячее:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['focaccia_dip'] = load_data(FOCACCIA_DIP_FILE, {"text": "Фокачча и дипы:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['snacks'] = load_data(SNACKS_FILE, {"text": "Закуски:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['salads'] = load_data(SALADS_FILE, {"text": "Салаты:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['soups'] = load_data(SOUPS_FILE, {"text": "Супы:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['grill'] = load_data(GRILL_FILE, {"text": "Гриль:\n[Ваше сообщение здесь]", "photos": []})
+    app.bot_data['desserts'] = load_data(DESSERTS_FILE, {"text": "Десерты:\n[Ваше сообщение здесь]", "photos": []})
+
+
 # Сохранение всех сообщений
 def save_all_messages(context):
-    # Сохранение эксклюзивного меню
-    save_data(EXCLUSIVE_MENU_FILE, context.bot_data['exclusive_menu'])
+    try:
+        # Сохранение эксклюзивного меню
+        save_data(EXCLUSIVE_MENU_FILE, context.bot_data['exclusive_menu'])
 
-    # Сохранение сезонного меню
-    save_data(SEASONAL_MENU_FILE, context.bot_data['seasonal_menu'])
+        # Сохранение сезонного меню
+        save_data(SEASONAL_MENU_FILE, context.bot_data['seasonal_menu'])
 
-    # Сохранение мероприятий
-    save_data(EVENTS_FILE, context.bot_data['events'])
+        # Сохранение мероприятий
+        save_data(EVENTS_FILE, context.bot_data['events'])
 
-    # Сохранение данных "О нас"
-    save_data(ABOUT_US_FILE, context.bot_data['about_us'])
+        # Сохранение данных "О нас"
+        save_data(ABOUT_US_FILE, context.bot_data['about_us'])
+
+        # Сохранение данных Меню Перчини
+        save_data(PIZZAS_FILE, context.bot_data['pizzas'])
+        save_data(PASTA_FILE, context.bot_data['pasta'])
+        save_data(HOT_FILE, context.bot_data['hot'])
+        save_data(FOCACCIA_DIP_FILE, context.bot_data['focaccia_dip'])
+        save_data(SNACKS_FILE, context.bot_data['snacks'])
+        save_data(SALADS_FILE, context.bot_data['salads'])
+        save_data(SOUPS_FILE, context.bot_data['soups'])
+        save_data(GRILL_FILE, context.bot_data['grill'])
+        save_data(DESSERTS_FILE, context.bot_data['desserts'])
+    except Exception as e:
+        logging.error(f"Ошибка при сохранении всех сообщений: {e}")
 
 def load_reservations():
     if os.path.exists(RESERVATIONS_FILE):
@@ -590,37 +679,6 @@ async def handle_main_menu_buttons(update: Update, context):
     elif query.data == "book_table":
         await show_calendar(query, context)  # Запускаем процесс бронирования
 
-    # Обработка для Меню Перчини
-    elif query.data == "perchini_menu":
-        await query.message.delete()
-        data = load_perchini_menu()
-        text = data.get("text", "Меню Перчини:\n[Ваше сообщение здесь]")
-        photos = data.get("photos", [])
-
-        keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]]
-        if is_user_admin:
-            keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data="edit_perchini_menu")])
-            keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data="clear_photos_perchini_menu")])
-
-        if photos:
-            media_group = []
-            # Создаем список объектов InputMediaPhoto для отправки группы фото
-            for idx, photo in enumerate(photos):
-                if idx == 0:
-                    # К первой фотографии добавляем текст в качестве подписи
-                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text))
-                else:
-                    media_group.append(InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb')))
-            
-            # Отправляем фото как медиа-группу с текстом в подписи к первой фотографии
-            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
-        else:
-            # Если фотографий нет, просто отправляем текст
-            await query.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-        # Отправляем клавиатуру "назад" после отправки медиа-группы
-        await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
-
     # Обработка для эксклюзивного меню
     elif query.data == "exclusive_menu":
         await query.message.delete()
@@ -652,6 +710,22 @@ async def handle_main_menu_buttons(update: Update, context):
         # Отправляем клавиатуру "назад" после отправки медиа-группы
         await query.message.reply_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
 
+    elif query.data == "perchini_menu":
+        await query.message.delete()
+        # Показываем подменю "Меню Перчини"
+        keyboard = [
+            [InlineKeyboardButton("🍕 Пиццы", callback_data="pizzas")],
+            [InlineKeyboardButton("🍝 Паста", callback_data="pasta")],
+            [InlineKeyboardButton("🔥 Горячее", callback_data="hot")],
+            [InlineKeyboardButton("🍞 Фокачча и дипы", callback_data="focaccia_dip")],
+            [InlineKeyboardButton("🍢 Закуски", callback_data="snacks")],
+            [InlineKeyboardButton("🥗 Салаты", callback_data="salads")],
+            [InlineKeyboardButton("🍲 Супы", callback_data="soups")],
+            [InlineKeyboardButton("🍖 Гриль", callback_data="grill")],
+            [InlineKeyboardButton("🍰 Десерты", callback_data="desserts")],
+            [InlineKeyboardButton("⬅ Назад", callback_data="back_to_main")]
+        ]
+        await query.message.reply_text("Меню Перчини:", reply_markup=InlineKeyboardMarkup(keyboard))
 
     # Обработка для сезонного меню
     elif query.data == "seasonal_menu":
@@ -834,6 +908,77 @@ async def handle_main_menu_buttons(update: Update, context):
     elif query.data == "back_to_menu":
         await handle_back_menu(update, context)
 
+async def handle_perchini_submenu(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "pizzas":
+        await show_perchini_item(query, load_pizzas(), "pizzas", context)
+    elif query.data == "pasta":
+        await show_perchini_item(query, load_pasta(), "pasta", context)
+    elif query.data == "hot":
+        await show_perchini_item(query, load_hot(), "hot", context)
+    elif query.data == "focaccia_dip":
+        await show_perchini_item(query, load_focaccia_dip(), "focaccia_dip", context)
+    elif query.data == "snacks":
+        await show_perchini_item(query, load_snacks(), "snacks", context)
+    elif query.data == "salads":
+        await show_perchini_item(query, load_salads(), "salads", context)
+    elif query.data == "soups":
+        await show_perchini_item(query, load_soups(), "soups", context)
+    elif query.data == "grill":
+        await show_perchini_item(query, load_grill(), "grill", context)
+    elif query.data == "desserts":
+        await show_perchini_item(query, load_desserts(), "desserts", context)
+
+async def handle_edit_perchini_item(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "edit_pizzas":
+        await query.message.reply_text("Введите новый текст для раздела Пиццы или отправьте новые фото.")
+        context.user_data['state'] = 'edit_pizzas'
+    elif query.data == "edit_pasta":
+        await query.message.reply_text("Введите новый текст для раздела Паста или отправьте новые фото.")
+        context.user_data['state'] = 'edit_pasta'
+    elif query.data == "edit_hot":
+        await query.message.reply_text("Введите новый текст для раздела Горячее или отправьте новые фото.")
+        context.user_data['state'] = 'edit_hot'
+    elif query.data == "edit_focaccia_dip":
+        await query.message.reply_text("Введите новый текст для раздела Фокачча и дипы или отправьте новые фото.")
+        context.user_data['state'] = 'edit_focaccia_dip'
+    elif query.data == "edit_snacks":
+        await query.message.reply_text("Введите новый текст для раздела Закуски или отправьте новые фото.")
+        context.user_data['state'] = 'edit_snacks'
+    elif query.data == "edit_salads":
+        await query.message.reply_text("Введите новый текст для раздела Салаты или отправьте новые фото.")
+        context.user_data['state'] = 'edit_salads'
+    elif query.data == "edit_soups":
+        await query.message.reply_text("Введите новый текст для раздела Супы или отправьте новые фото.")
+        context.user_data['state'] = 'edit_soups'
+    elif query.data == "edit_grill":
+        await query.message.reply_text("Введите новый текст для раздела Гриль или отправьте новые фото.")
+        context.user_data['state'] = 'edit_grill'
+    elif query.data == "edit_desserts":
+        await query.message.reply_text("Введите новый текст для раздела Десерты или отправьте новые фото.")
+        context.user_data['state'] = 'edit_desserts'
+
+async def show_perchini_item(query, data, item_type, context):
+    # Здесь context передается из библиотеки Telegram, а не multiprocessing
+    text = data.get("text", "[Ваше сообщение здесь]")
+    photos = data.get("photos", [])
+
+    keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="perchini_menu")]]
+    if is_admin(query.from_user.id):
+        keyboard.insert(0, [InlineKeyboardButton("✏️ Редактировать", callback_data=f"edit_{item_type}")])
+        keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data=f"clear_photos_{item_type}")])
+
+    if photos:
+        media_group = [InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text if idx == 0 else None) for idx, photo in enumerate(photos)]
+        await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
+
+    await query.message.reply_text("Выберите действие", reply_markup=InlineKeyboardMarkup(keyboard))
+
 # Обработка команд редактирования для новых пунктов "О нас"
 async def handle_about_us_edit(update: Update, context):
     query = update.callback_query
@@ -912,13 +1057,6 @@ async def handle_admin_menu(update: Update, context):
     if query.data == "edit_perchini_menu":
         await query.message.reply_text("Введите новый текст для Меню Перчини или отправьте новые фото.")
         context.user_data['state'] = 'edit_perchini_menu'
-
-    elif query.data == "clear_photos_perchini_menu":
-        data = load_perchini_menu()
-        data["photos"] = []  # Очищаем список фото
-        save_perchini_menu(data)  # Сохраняем обновленный файл
-        await query.message.reply_text("Все фотографии Меню Перчини успешно удалены.")
-        await query.answer()
 
     elif query.data == "edit_exclusive_menu":
         await query.message.reply_text("Введите новый текст для эксклюзивного меню или отправьте новые фото.")
@@ -1480,30 +1618,170 @@ async def handle_message(update: Update, context):
         await update.message.reply_text("Информация о заведении успешно обновлена.")
         context.user_data['state'] = None
         return
-
-    # Редактирование Меню Перчини
-    elif context.user_data.get('state') == 'edit_perchini_menu':
-        data = load_perchini_menu()
     
+        # Обработка редактирования разделов Меню Перчини
+    elif context.user_data.get('state') == 'edit_pizzas':
+        data = load_pizzas()
         if message_text:
             data["text"] = message_text
-    
         if photo:
             if "photos" not in data:
                 data["photos"] = []
             if len(data["photos"]) < 10:
                 file_id = photo[-1].file_id
-                new_photo_path = f"perchini_menu_{file_id}.jpg"
+                new_photo_path = f"pizzas_{file_id}.jpg"
                 new_photo_file = await context.bot.get_file(file_id)
                 await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
                 data["photos"].append(new_photo_path)
-            else:
-                await update.message.reply_text("Достигнут лимит в 10 фотографий для Меню Перчини. Удалите одну, чтобы добавить новую.")
-    
-        save_perchini_menu(data)
-        await update.message.reply_text("Меню Перчини успешно обновлено.")
+        save_pizzas(data)
+        await update.message.reply_text("Раздел Пиццы успешно обновлён.")
         context.user_data['state'] = None
         return
+    
+    elif context.user_data.get('state') == 'edit_pasta':
+        data = load_pasta()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"pasta_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_pasta(data)
+        await update.message.reply_text("Раздел Паста успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_hot':
+        data = load_hot()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"hot_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_hot(data)
+        await update.message.reply_text("Раздел Горячее успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_focaccia_dip':
+        data = load_focaccia_dip()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"focaccia_dip_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_focaccia_dip(data)
+        await update.message.reply_text("Раздел Фокачча и дипы успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_snacks':
+        data = load_snacks()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"snacks_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_snacks(data)
+        await update.message.reply_text("Раздел Закуски успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_salads':
+        data = load_salads()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"salads_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_salads(data)
+        await update.message.reply_text("Раздел Салаты успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_soups':
+        data = load_soups()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"soups_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_soups(data)
+        await update.message.reply_text("Раздел Супы успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_grill':
+        data = load_grill()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"grill_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_grill(data)
+        await update.message.reply_text("Раздел Гриль успешно обновлён.")
+        context.user_data['state'] = None
+        return
+    
+    elif context.user_data.get('state') == 'edit_desserts':
+        data = load_desserts()
+        if message_text:
+            data["text"] = message_text
+        if photo:
+            if "photos" not in data:
+                data["photos"] = []
+            if len(data["photos"]) < 10:
+                file_id = photo[-1].file_id
+                new_photo_path = f"desserts_{file_id}.jpg"
+                new_photo_file = await context.bot.get_file(file_id)
+                await new_photo_file.download_to_drive(os.path.join(CURRENT_DIR, new_photo_path))
+                data["photos"].append(new_photo_path)
+        save_desserts(data)
+        await update.message.reply_text("Раздел Десерты успешно обновлён.")
+        context.user_data['state'] = None
+        return
+
 
     # Обработка редактирования эксклюзивного меню
     elif context.user_data.get('state') == 'edit_exclusive_menu':
@@ -2069,7 +2347,9 @@ def add_handlers(app):
     app.add_handler(CallbackQueryHandler(handle_about_us_edit, pattern=r"^(edit_contacts|edit_our_staff|edit_about_establishment)$"))
     app.add_handler(CallbackQueryHandler(handle_back_about, pattern=r"^back_to_about_us$"))
     app.add_handler(CallbackQueryHandler(handle_back_button, pattern=r"^back_to_menu$"))
-    
+    app.add_handler(CallbackQueryHandler(handle_perchini_submenu, pattern=r"^(pizzas|pasta|hot|focaccia_dip|snacks|salads|soups|grill|desserts)$"))
+    app.add_handler(CallbackQueryHandler(handle_edit_perchini_item, pattern=r"^(edit_pizzas|edit_pasta|edit_hot|edit_focaccia_dip|edit_snacks|edit_salads|edit_soups|edit_grill|edit_desserts)$"))
+
 
     # Хендлер для выбора редактируемого сообщения
     app.add_handler(MessageHandler(filters.PHOTO, handle_message))  # Обработка фото
