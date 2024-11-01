@@ -1,0 +1,3 @@
+INFO:telegram.ext._application:Application started
+INFO:telegram.ext._application:Application is stopping. This might take a moment.
+INFO:telegram.ext._application:Application.stop() complete
