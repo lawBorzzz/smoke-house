@@ -34,6 +34,7 @@ SALADS_FILE = os.path.join(CURRENT_DIR, 'perchini_salads.json')
 SOUPS_FILE = os.path.join(CURRENT_DIR, 'perchini_soups.json')
 GRILL_FILE = os.path.join(CURRENT_DIR, 'perchini_grill.json')
 DESSERTS_FILE = os.path.join(CURRENT_DIR, 'perchini_desserts.json')
+FILE_CACHE_PATH = os.path.join(CURRENT_DIR, 'file_cache.json')
 
 
 # Пути к файлам сообщений
@@ -42,6 +43,21 @@ SEASONAL_MENU_FILE = os.path.join(CURRENT_DIR, 'seasonal_menu.json')
 EVENTS_FILE = os.path.join(CURRENT_DIR, 'events.json')
 ABOUT_US_FILE = os.path.join(CURRENT_DIR, 'about_us.json')
 ARCHIVE_FILE = os.path.join(CURRENT_DIR, 'archive.json')
+
+# Загрузка кэша из файла
+def load_file_cache():
+    if os.path.exists(FILE_CACHE_PATH):
+        with open(FILE_CACHE_PATH, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    return {}
+
+# Сохранение кэша в файл
+def save_file_cache(cache):
+    with open(FILE_CACHE_PATH, 'w', encoding='utf-8') as file:
+        json.dump(cache, file, ensure_ascii=False, indent=4)
+
+# Инициализация кэша
+file_cache = load_file_cache()
 
 # Загрузка архива из файла
 def load_archive():
@@ -962,9 +978,23 @@ async def handle_edit_perchini_item(update: Update, context):
         await query.message.reply_text("Введите новый текст для раздела Десерты или отправьте новые фото.")
         context.user_data['state'] = 'edit_desserts'
 
+async def send_cached_photo(context, chat_id, photo_path, caption=None):
+    # Проверяем, есть ли file_id в кэше
+    if photo_path in file_cache:
+        file_id = file_cache[photo_path]
+        await context.bot.send_photo(chat_id=chat_id, photo=file_id, caption=caption)
+    else:
+        # Отправляем фото с диска, если file_id не найден
+        with open(photo_path, 'rb') as photo:
+            message = await context.bot.send_photo(chat_id=chat_id, photo=photo, caption=caption)
+            # Сохраняем file_id в кэш
+            file_cache[photo_path] = message.photo[-1].file_id
+            save_file_cache(file_cache)
+
 async def show_perchini_item(query, data, item_type, context):
     text = data.get("text", "[Ваше сообщение здесь]")
     photos = data.get("photos", [])
+    await query.delete_message()
 
     keyboard = [[InlineKeyboardButton("⬅ Назад", callback_data="perchini_menu")]]
     if is_admin(query.from_user.id):
@@ -972,11 +1002,22 @@ async def show_perchini_item(query, data, item_type, context):
         keyboard.insert(1, [InlineKeyboardButton("🗑 Очистить фото", callback_data=f"clear_photos_{item_type}")])
 
     if photos:
-        media_group = [InputMediaPhoto(open(os.path.join(CURRENT_DIR, photo), 'rb'), caption=text if idx == 0 else None) for idx, photo in enumerate(photos)]
-        await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
+        media_group = []
+        for idx, photo in enumerate(photos):
+            if photo in file_cache:
+                # Используем закэшированный file_id
+                media_group.append(InputMediaPhoto(file_cache[photo], caption=text if idx == 0 else None))
+            else:
+                # Если file_id нет в кэше, загружаем фото с диска и кэшируем
+                with open(os.path.join(CURRENT_DIR, photo), 'rb') as photo_file:
+                    message = await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo_file, caption=text if idx == 0 else None)
+                    file_cache[photo] = message.photo[-1].file_id
+                    save_file_cache(file_cache)
+
+        if media_group:
+            await context.bot.send_media_group(chat_id=query.message.chat_id, media=media_group)
 
     await query.message.reply_text("Выберите действие", reply_markup=InlineKeyboardMarkup(keyboard))
-
 
 # Обработка команд редактирования для новых пунктов "О нас"
 async def handle_about_us_edit(update: Update, context):
