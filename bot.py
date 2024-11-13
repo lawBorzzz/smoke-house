@@ -551,7 +551,8 @@ async def check_registration(update: Update, context):
 
     # Если данные уже есть, переходим к бронированию
     await show_calendar(update.callback_query, context)
-    del context.user_data['prize']
+    if 'prize' in context.user_data:
+        del context.user_data['prize']
 
 # Функция для обработки команды /start
 async def start(update: Update, context):
