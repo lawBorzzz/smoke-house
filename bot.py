@@ -23,7 +23,7 @@ logging.getLogger("telegram.ext").setLevel(logging.ERROR)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 # Ваш токен и настройка админов
-TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
+TOKEN = '6902627330:AAE8WTNXsF6t4rNbHUVfm_ywHKERZqt9Xdk'
 MAIN_ADMIN_IDS = [1980610942, 394468757]
 
 # Пути к файлам
@@ -469,11 +469,6 @@ load_all_messages(app)
 def is_admin(user_id):
     return user_id in admins
 
-# Функция для сброса состояния пользователя
-def reset_user_state(user_id):
-    if user_id in reservations:
-        del reservations[user_id]
-
 # Функция запуска игры
 async def play_game(update: Update, context):
     query = update.callback_query
@@ -557,6 +552,7 @@ async def check_registration(update: Update, context):
 # Функция для обработки команды /start
 async def start(update: Update, context):
     user_id = update.message.from_user.id
+    reset_user_state(user_id, context)  # Передаем context в функцию
 
     # Проверяем, есть ли пользователь в базе
     if str(user_id) not in user_ids:
@@ -1020,7 +1016,7 @@ async def show_admin_menu(query: Update):
     ])
     
     await query.message.reply_text(
-        f"Версия 1.5\nВы в админ меню. Выберите действие:",
+        f"Версия 1.6\nВы в админ меню. Выберите действие:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -1051,29 +1047,31 @@ async def handle_admin_menu(update: Update, context):
     query = update.callback_query
     await query.answer()
 
-    # Логируем данные для отладки
-    print(f"Callback data: {query.data}")  # Смотрим, что за данные приходят
-
     if query.data == "edit_seasonal_menu":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите новый текст для сезонного меню или отправьте новое фото.")
         context.user_data['state'] = 'edit_seasonal_menu'
 
     elif query.data == "edit_events":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите новый текст для мероприятий или отправьте новое фото.")
         context.user_data['state'] = 'edit_events'
 
         # Добавлено редактирование для "Контакты"
     elif query.data == "edit_contacts":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите новый текст для контактов или отправьте новые фото.")
         context.user_data['state'] = 'edit_contacts'
     
     # Добавлено редактирование для "Наш персонал"
     elif query.data == "edit_our_staff":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите новый текст для информации о персонале или отправьте новые фото.")
         context.user_data['state'] = 'edit_our_staff'
     
     # Добавлено редактирование для "О заведении"
     elif query.data == "edit_about_establishment":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите новый текст для информации о заведении или отправьте новые фото.")
         context.user_data['state'] = 'edit_about_establishment'
     
@@ -1213,22 +1211,19 @@ async def handle_admin_menu(update: Update, context):
         admin_list = []
         for admin_id in admins:
             user_data = user_ids.get(str(admin_id))  # Получаем данные по admin_id
-            print(f"Проверка admin_id: {admin_id}, user_data: {user_data}")  # Логируем admin_id и user_data
             
             if user_data and 'name' in user_data:
                 admin_name = user_data['name']
-                print(f"Найдено имя для {admin_id}: {admin_name}")  # Логируем найденное имя
             else:
                 admin_name = str(admin_id)
-                print(f"Имя не найдено для {admin_id}, выводим ID")  # Логируем, если имя не найдено
             
             admin_list.append(admin_name)
 
-        print(f"Текущие админы: {admin_list}")  # Логируем список администраторов
         await query.message.reply_text(f"Текущие админы:\n" + "\n".join(admin_list))
 
     # Добавление нового админа
     elif query.data == "add_admin":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите ID пользователя, которого хотите добавить в админы:")
         context.user_data['state'] = 'awaiting_admin_id'  # Устанавливаем уникальное состояние для добавления админа
 
@@ -1254,12 +1249,13 @@ async def handle_admin_menu(update: Update, context):
 
     # Рассылка сообщения
     if query.data == "broadcast_message":
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await query.message.reply_text("Введите сообщение для рассылки:")
         context.user_data['state'] = 'broadcast_message'  # Устанавливаем состояние для рассылки
 
     # Редактирование скидки
     elif query.data == "edit_discount":
-        print("Пользователь нажал на кнопку редактирования скидки")  # Логируем
+        reset_user_state(query.from_user.id, context)  # Сбрасываем все состояния пользователя
         await show_edit_discount_menu(query, context)  # Вызываем нужную функцию
 
     # Обработка нажатия на "Назад"
@@ -1369,8 +1365,6 @@ async def show_booking_list(update, context):
 # Редактирование скидки
 async def show_edit_discount_menu(update: Update, context):
     if user_ids:
-        # Логируем список пользователей для проверки
-        print(f"Текущие пользователи: {user_ids}")
 
         # Формируем список имен, номеров телефонов (последние 4 цифры) и скидок
         keyboard = [
@@ -2212,19 +2206,24 @@ async def confirm_reservation(update: Update, context):
         )
 
         await context.bot.send_message(chat_id=user_id, text=confirmation_message)
-        reset_user_state(user_id)
+        reset_user_state(user_id, context)
         await query.message.delete()
 
 # Сброс состояния пользователя
-def reset_user_state(user_id):
-    global reservations  # Указываем, что работаем с глобальной переменной
+def reset_user_state(user_id, context):
+    global reservations
 
+    # Удаление из глобального хранилища бронирований
     if user_id in reservations:
         del reservations[user_id]
-        user_states[user_id] = 'IDLE'  # Сбрасываем состояние в IDLE
-        print(f"Состояние пользователя {user_id} успешно сброшено.")  # Для отладки
-    else:
-        print(f"Пользователь {user_id} не имеет активной брони.")  # Для отладки
+
+    # Принудительное обнуление всех данных пользователя в context.user_data
+    if context and hasattr(context, 'user_data'):
+        context.user_data.clear()
+
+    # Обнуление в глобальных состояниях (если используется)
+    if user_id in user_states:
+        user_states[user_id] = 'IDLE'
 
 # Удаление администратора
 async def remove_admin(update: Update, context):
@@ -2254,16 +2253,13 @@ async def admin_list(update: Update, context):
     if is_main_admin(update.message.from_user.id):
         if admins:
             admin_list = []
-            print("Проверка: user_ids содержимое:", user_ids)  # Выводим содержимое user_ids для проверки
 
             for admin_id in admins:
                 user_data = user_ids.get(str(admin_id))
                 if user_data and 'name' in user_data:
                     admin_name = user_data['name']
-                    print(f"Найдено имя для {admin_id}: {admin_name}")  # Логируем найденное имя
                 else:
                     admin_name = str(admin_id)  # Если имя не найдено, используем ID
-                    print(f"Имя не найдено для {admin_id}, выводим ID")  # Логируем, если имя не найдено
 
                 admin_list.append(admin_name)
             
@@ -2275,6 +2271,10 @@ async def admin_list(update: Update, context):
 
 # Команды, доступные только главному администратору
 async def add_admin(update: Update, context):
+    user_id = update.message.from_user.id
+    reset_user_state(user_id, context)  # Передаем context в функцию
+    await update.message.reply_text("Ваши состояния сброшены.")
+        
     if is_main_admin(update.message.from_user.id):
         if context.args:
             new_admin_id = int(context.args[0])
