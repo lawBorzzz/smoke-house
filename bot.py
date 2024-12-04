@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from random import choice, choices
 import threading
 from telegram.ext import ApplicationBuilder
+from telegram.request import HTTPXRequest
 
 from dateutil.relativedelta import relativedelta
 import pytz
@@ -27,7 +28,7 @@ logging.getLogger("telegram.ext").setLevel(logging.ERROR)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 # Ваш токен и настройка админов
-TOKEN = '6902627330:AAE8WTNXsF6t4rNbHUVfm_ywHKERZqt9Xdk'
+TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
 MAIN_ADMIN_IDS = [1980610942, 394468757]
 
 # Пути к файлам
@@ -466,7 +467,8 @@ active_staff = {
 ensure_files_exist()
 
 # Инициализация приложения
-app = ApplicationBuilder().token(TOKEN).request_kwargs({'read_timeout': 10, 'connect_timeout': 10}).build()
+request = HTTPXRequest(read_timeout=10, connect_timeout=10)
+app = ApplicationBuilder().token(TOKEN).request(request).build()
 
 # Загрузка сообщений при старте, передаем app
 load_all_messages(app)
