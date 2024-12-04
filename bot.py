@@ -8,7 +8,6 @@ import socket
 from datetime import datetime, timedelta
 from random import choice, choices
 import threading
-from turtle import update
 from telegram.ext import ApplicationBuilder
 
 from dateutil.relativedelta import relativedelta
