@@ -3,9 +3,13 @@ import json
 import logging
 import asyncio  # Импорт для использования паузы
 import calendar  # Для получения названия месяца
+import time
+import socket
 from datetime import datetime, timedelta
 from random import choice, choices
 import threading
+from turtle import update
+from telegram.ext import ApplicationBuilder
 
 from dateutil.relativedelta import relativedelta
 import pytz
@@ -13,6 +17,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMe
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 from telegram.constants import ParseMode
 from multiprocessing import context
+from telegram.error import NetworkError, RetryAfter, TelegramError
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -23,7 +28,7 @@ logging.getLogger("telegram.ext").setLevel(logging.ERROR)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 # Ваш токен и настройка админов
-TOKEN = '7692845826:AAEWYoo1bFU22LNa79-APy_iZyio2dwc9zA'
+TOKEN = '6902627330:AAE8WTNXsF6t4rNbHUVfm_ywHKERZqt9Xdk'
 MAIN_ADMIN_IDS = [1980610942, 394468757]
 
 # Пути к файлам
@@ -48,6 +53,7 @@ SEASONAL_MENU_FILE = os.path.join(CURRENT_DIR, 'seasonal_menu.json')
 EVENTS_FILE = os.path.join(CURRENT_DIR, 'events.json')
 ABOUT_US_FILE = os.path.join(CURRENT_DIR, 'about_us.json')
 ARCHIVE_FILE = os.path.join(CURRENT_DIR, 'archive.json')
+
 
 # Загрузка кэша из файла
 def load_file_cache():
@@ -461,7 +467,7 @@ active_staff = {
 ensure_files_exist()
 
 # Инициализация приложения
-app = Application.builder().token(TOKEN).build()
+app = ApplicationBuilder().token(TOKEN).request_kwargs({'read_timeout': 10, 'connect_timeout': 10}).build()
 
 # Загрузка сообщений при старте, передаем app
 load_all_messages(app)
@@ -2348,6 +2354,27 @@ def load_admins():
         with open(ADMINS_FILE, 'r') as file:
             return json.load(file)
     return []
+
+def is_connected():
+    try:
+        # Проверка соединения с сервером Google DNS
+        socket.create_connection(("8.8.8.8", 53))
+        return True
+    except OSError:
+        return False
+
+async def restart_bot():
+    while True:
+        try:
+            await app.run_polling()
+        except NetworkError as e:
+            print(f"NetworkError: {e}. Перезапуск...")
+            await asyncio.sleep(5)
+        except Exception as e:
+            print(f"Ошибка: {e}. Перезапуск...")
+            await asyncio.sleep(5)
+
+asyncio.run(restart_bot())
 
 # Обновленный список хендлеров для редактирования
 def add_handlers(app):
