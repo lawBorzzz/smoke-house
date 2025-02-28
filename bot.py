@@ -24,7 +24,7 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 # Ваш токен и настройка админов
 TOKEN = '7692845826:AAHPNq5AyBi71S_Prm5c37_6Gzs-ttSgLhw'
-MAIN_ADMIN_IDS = [1980610942, 394468757]
+MAIN_ADMIN_IDS = [1980610942, 394468757, 1073218183]
 
 # Пути к файлам
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
