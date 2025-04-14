@@ -541,7 +541,7 @@ async def show_main_menu(update: Update, context):
 
     # Создаем клавиатуру для основного меню
     keyboard = [
-        [InlineKeyboardButton("🌶️ Меню Перчини", url="https://example.com")],
+        [InlineKeyboardButton("🌶️ Меню Перчини", url="https://perchini.ru/view-menu.html?rest=75&menu=main")],
         [InlineKeyboardButton("🌱 Сезонное меню", callback_data="seasonal_menu")],
         [InlineKeyboardButton("🎲 Настолки", callback_data="about_us")],
         [InlineKeyboardButton("🎉 Мероприятия", callback_data="events")]
