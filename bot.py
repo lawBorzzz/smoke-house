@@ -23,7 +23,7 @@ logging.getLogger("telegram.ext").setLevel(logging.ERROR)
 logging.getLogger("apscheduler").setLevel(logging.WARNING)
 
 # Ваш токен и настройка админов
-TOKEN = '7780351680:AAGCIaC_eZ4VctxzmGbdxUqQMVAGEZlVvuM'
+TOKEN = '7692845826:AAHPNq5AyBi71S_Prm5c37_6Gzs-ttSgLhw'
 MAIN_ADMIN_IDS = [1980610942, 394468757, 1073218183]
 
 # Пути к файлам
